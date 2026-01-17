@@ -31,6 +31,20 @@
         button:hover {
             background-color: #e65c00;
         }
+        input {
+            padding: 5px;
+            width: 70%;
+            margin-right: 10px;
+        }
+        .joke-list {
+            margin-top: 20px;
+        }
+        .joke-list p {
+            background-color: #fff3e0;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
@@ -40,7 +54,28 @@
     <div class="joke-wall">
         <h2>Joke Wall</h2>
         <p>Submit your funniest joke below and see it appear here!</p>
-        <button>Submit a Joke</button>
+        <input type="text" id="jokeInput" placeholder="Type your joke here">
+        <button onclick="submitJoke()">Submit a Joke</button>
+
+        <div class="joke-list" id="jokeList">
+            <!-- New jokes will appear here -->
+        </div>
     </div>
+
+    <script>
+        function submitJoke() {
+            const input = document.getElementById('jokeInput');
+            const joke = input.value.trim();
+            if(joke) {
+                const jokeList = document.getElementById('jokeList');
+                const p = document.createElement('p');
+                p.textContent = joke;
+                jokeList.appendChild(p);
+                input.value = ''; // Clear the input box
+            } else {
+                alert("Please type a joke before submitting!");
+            }
+        }
+    </script>
 </body>
 </html>
