@@ -9,6 +9,10 @@
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:wght@500;700&display=swap" rel="stylesheet">
 
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
   <style>
     :root{
       --bg-outer: #e8e8e8;
@@ -90,22 +94,18 @@
 
     /* Form */
     form.joke-form{
-      position: relative;
       display:flex;
+      flex-direction: column;
       gap:12px;
-      align-items:flex-start;
       margin-top:18px;
       margin-bottom:18px;
-      flex-wrap:wrap;
     }
 
     .field {
       display:flex;
       flex-direction:column;
       gap:8px;
-      flex:1 1 100%;
-      min-width:220px;
-      position: relative;
+      width:100%;
     }
 
     input[type="text"], textarea {
@@ -121,30 +121,34 @@
       box-shadow: var(--shadow-2);
     }
 
-    /* Overlay preview button */
-    #previewBtn{
-      position:absolute;
-      top:8px;
-      right:8px;
-      z-index:2;
-      font-size:13px;
-      padding:6px 12px;
-      border-radius:8px;
-      background: var(--accent);
-      color: #fff;
-      border:none;
-      cursor:pointer;
-      transition: all 180ms ease;
-    }
-    #previewBtn:hover{transform:translateY(-2px);opacity:0.9;}
-
     .form-actions{
       display:flex;
       gap:10px;
       align-items:center;
       justify-content:flex-end;
-      flex: 0 0 auto;
     }
+
+    button{
+      font-family: "Inter", sans-serif;
+      font-weight:600;
+      font-size:14px;
+      padding:10px 16px;
+      border-radius:8px;
+      border:none;
+      cursor:pointer;
+      transition: all 180ms ease;
+    }
+
+    #submitBtn{
+      background: var(--accent);
+      color:white;
+    }
+    #submitBtn:hover{opacity:0.9;transform:translateY(-2px);}
+    #previewBtn{
+      background: var(--accent-2);
+      color:#222;
+    }
+    #previewBtn:hover{opacity:0.9;transform:translateY(-2px);}
 
     /* Joke list */
     .joke-list{
@@ -240,9 +244,9 @@
       font-size:15px;
       border:1px dashed rgba(0,0,0,0.04);
     }
-
   </style>
 </head>
+
 <body>
   <div class="container">
     <header class="brand">
@@ -269,77 +273,100 @@
         <div class="field">
           <label for="joke">Your Line</label>
           <textarea id="joke" placeholder="Write something short and funny…" maxlength="800"></textarea>
-          <button type="button" id="previewBtn">Preview</button>
         </div>
 
         <div class="form-actions">
-          <button type="submit" class="btn btn--primary" id="submitBtn">Submit</button>
+          <button type="button" id="previewBtn">Preview</button>
+          <button type="submit" id="submitBtn">Submit</button>
         </div>
       </form>
 
       <div id="jokeListArea">
         <div id="jokeList" class="joke-list" aria-live="polite"></div>
       </div>
-
     </main>
   </div>
 
   <script>
-    (function(){
-      const LS_KEY = 'lohs_jokes_v2';
-      const jokeListEl = document.getElementById('jokeList');
-      const jokeInput = document.getElementById('joke');
-      const authorInput = document.getElementById('author');
-      const submitBtn = document.getElementById('submitBtn');
-      const previewBtn = document.getElementById('previewBtn');
+    // Initialize Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBWNQ1vM2Ki4ReBCOrrCD8fC1iVhwlsX8",
+      authDomain: "comedy-club-alpha.firebaseapp.com",
+      projectId: "comedy-club-alpha",
+      storageBucket: "comedy-club-alpha.firebasestorage.app",
+      messagingSenderId: "251530882249",
+      appId: "1:251530882249:web:4b5c1aa8e2de9273a0b118",
+      measurementId: "G-JZXQ7ZXQ7M"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
-      function loadJokes(){return JSON.parse(localStorage.getItem(LS_KEY)||'[]');}
-      function saveJokes(list){localStorage.setItem(LS_KEY,JSON.stringify(list));}
-      function ts(){return new Date().toISOString();}
-      function fmtTime(iso){const d=new Date(iso);return d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
-      function createJoke(entry){
-        const wrap=document.createElement('article'); wrap.className='joke'; wrap.dataset.id=entry.id;
-        const content=document.createElement('div'); content.className='joke-content';
-        const meta=document.createElement('div'); meta.className='meta';
-        const who=document.createElement('div'); who.className='who'; who.textContent=entry.author||'Anonymous';
-        const time=document.createElement('div'); time.className='time'; time.textContent=fmtTime(entry.time);
-        meta.appendChild(who); meta.appendChild(time);
-        const text=document.createElement('div'); text.className='joke-text'; text.textContent=entry.text;
-        content.appendChild(meta); content.appendChild(text);
-        const actions=document.createElement('div'); actions.className='joke-actions';
-        const del=document.createElement('button'); del.className='icon-btn'; del.innerHTML='Remove'; del.onclick=()=>{removeJoke(entry.id);};
-        const copy=document.createElement('button'); copy.className='icon-btn'; copy.innerHTML='Copy'; copy.onclick=()=>{navigator.clipboard.writeText(`${entry.text} — ${entry.author||'Anonymous'}`).then(()=>{copy.textContent='Copied'; setTimeout(()=>copy.textContent='Copy',1200);});};
-        actions.appendChild(copy); actions.appendChild(del);
-        wrap.appendChild(content); wrap.appendChild(actions);
-        return wrap;
-      }
+    const jokeListEl = document.getElementById('jokeList');
+    const jokeInput = document.getElementById('joke');
+    const authorInput = document.getElementById('author');
+    const submitBtn = document.getElementById('submitBtn');
+    const previewBtn = document.getElementById('previewBtn');
 
-      function render(){
-        const list=loadJokes(); jokeListEl.innerHTML='';
-        if(!list.length){const empty=document.createElement('div'); empty.className='empty'; empty.textContent='No entries yet — be the first to post a tasteful one-liner.'; jokeListEl.appendChild(empty); return;}
-        list.slice().reverse().forEach(e=>jokeListEl.appendChild(createJoke(e)));
-      }
+    function ts(){return new Date();}
+    function fmtTime(d){return d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
+    function createJoke(entry){
+      const wrap=document.createElement('article'); wrap.className='joke'; wrap.dataset.id=entry.id;
+      const content=document.createElement('div'); content.className='joke-content';
+      const meta=document.createElement('div'); meta.className='meta';
+      const who=document.createElement('div'); who.className='who'; who.textContent=entry.author||'Anonymous';
+      const time=document.createElement('div'); time.className='time'; time.textContent=fmtTime(entry.time);
+      meta.appendChild(who); meta.appendChild(time);
+      const text=document.createElement('div'); text.className='joke-text'; text.textContent=entry.text;
+      content.appendChild(meta); content.appendChild(text);
+      const actions=document.createElement('div'); actions.className='joke-actions';
+      const del=document.createElement('button'); del.className='icon-btn'; del.innerHTML='Remove';
+      del.onclick=()=>{db.collection('jokes').doc(entry.id).delete();}
+      const copy=document.createElement('button'); copy.className='icon-btn'; copy.innerHTML='Copy';
+      copy.onclick=()=>{navigator.clipboard.writeText(`${entry.text} — ${entry.author||'Anonymous'}`).then(()=>{copy.textContent='Copied'; setTimeout(()=>copy.textContent='Copy',1200);});};
+      actions.appendChild(copy); actions.appendChild(del);
+      wrap.appendChild(content); wrap.appendChild(actions);
+      return wrap;
+    }
 
-      function addJoke(author,text){
-        const trimmed=text.trim(); if(!trimmed) return false;
-        const list=loadJokes();
-        const entry={id:'j'+Date.now(),author:author.trim(),text:trimmed,time:ts()};
-        list.push(entry); saveJokes(list); render(); return true;
-      }
-      function removeJoke(id){let list=loadJokes(); list=list.filter(e=>e.id!==id); saveJokes(list); render();}
-
-      submitBtn.addEventListener('click',()=>{if(!jokeInput.value.trim()) return;jokeInput.style.outline=''; addJoke(authorInput.value,jokeInput.value); jokeInput.value=''; authorInput.value='';});
-      previewBtn.addEventListener('click',()=>{
-        const txt=jokeInput.value.trim(); if(!txt) return;
-        const tmp={id:'tmp',author:authorInput.value||'You (preview)',text:txt,time:ts()};
-        const el=createJoke(tmp); el.style.opacity='0.98'; el.style.transform='translateY(-4px)';
-        if(jokeListEl.firstChild && jokeListEl.firstChild.classList.contains('empty')) jokeListEl.firstChild.remove();
-        jokeListEl.insertBefore(el,jokeListEl.firstChild);
-        setTimeout(()=>{if(el.parentNode) el.remove();},3000);
+    function renderJokes(){
+      db.collection("jokes").orderBy("time","desc").onSnapshot(snapshot=>{
+        jokeListEl.innerHTML='';
+        if(snapshot.empty){
+          const empty = document.createElement('div');
+          empty.className='empty';
+          empty.textContent='No entries yet — be the first to post a tasteful one-liner.';
+          jokeListEl.appendChild(empty);
+          return;
+        }
+        snapshot.forEach(doc=>{
+          const data = doc.data();
+          const entry = {id:doc.id, author:data.author, text:data.text, time:data.time ? data.time.toDate() : new Date()};
+          jokeListEl.appendChild(createJoke(entry));
+        });
       });
+    }
 
-      render();
-    })();
+    submitBtn.addEventListener('click',()=>{
+      const text=jokeInput.value.trim();
+      if(!text) return;
+      db.collection("jokes").add({
+        author: authorInput.value.trim() || "Anonymous",
+        text: text,
+        time: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      jokeInput.value=''; authorInput.value='';
+    });
+
+    previewBtn.addEventListener('click',()=>{
+      const text=jokeInput.value.trim();
+      if(!text) return;
+      const entry={id:'tmp',author:authorInput.value||'You (preview)',text:text,time:new Date()};
+      const el=createJoke(entry);
+      jokeListEl.insertBefore(el,jokeListEl.firstChild);
+      setTimeout(()=>{if(el.parentNode) el.remove();},3000);
+    });
+
+    renderJokes();
   </script>
 </body>
 </html>
