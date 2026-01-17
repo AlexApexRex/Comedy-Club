@@ -49,6 +49,7 @@
       gap:20px;
       align-items:center;
       margin-bottom:36px;
+      justify-content:space-between;
     }
 
     .brand h1{
@@ -63,6 +64,22 @@
       margin:0;
       color:var(--muted);
       font-size:14px;
+    }
+
+    /* Controls (sort/filter) */
+    .controls {
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+    .controls label { font-size:13px; color:var(--muted); }
+    .sort-select {
+      padding:8px 10px;
+      border-radius:8px;
+      background:var(--bg-inner);
+      border:1px solid rgba(0,0,0,0.06);
+      font-weight:600;
+      cursor:pointer;
     }
 
     .card{
@@ -341,6 +358,9 @@
     .modal .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:16px; }
     .modal .close-btn { background:transparent; border:1px solid rgba(0,0,0,0.06); padding:8px 12px; border-radius:8px; cursor:pointer; }
     .modal .agree-btn { background: var(--accent); color:#fff; padding:8px 14px; border-radius:8px; border:none; cursor:pointer; }
+
+    /* small helpers */
+    .notice { font-size:13px; color:var(--muted); margin-bottom:10px; }
   </style>
 </head>
 
@@ -350,6 +370,14 @@
       <div>
         <h1>LOHS Comedy Club</h1>
         <p>Refined Joke Wall — share a moment of levity</p>
+      </div>
+
+      <div class="controls" aria-hidden="false">
+        <label for="sortSelect">Sort:</label>
+        <select id="sortSelect" class="sort-select" aria-label="Sort jokes">
+          <option value="best">Best (top rated)</option>
+          <option value="newest">Newest</option>
+        </select>
       </div>
     </header>
 
@@ -412,7 +440,9 @@
   </div>
 
   <script>
+    // -----------------------
     // Initialize Firebase
+    // -----------------------
     const firebaseConfig = {
       apiKey: "AIzaSyBWNQ1vM2Ki4ReBCOrrCD8fC1iVhwlsX8",
       authDomain: "comedy-club-alpha.firebaseapp.com",
@@ -429,15 +459,6 @@
     // Replace with your admin UID (the UID you got from firebase.auth().currentUser.uid)
     const adminUID = "YOUR_UID_HERE";
 
-    // Ensure auth state (anonymous sign in if not signed in)
-    auth.onAuthStateChanged(user => {
-      if (!user) {
-        auth.signInAnonymously().catch(console.error);
-      } else {
-        // user available; nothing else required here
-      }
-    });
-
     // UI elements
     const jokeListEl = document.getElementById('jokeList');
     const jokeInput = document.getElementById('joke');
@@ -449,6 +470,7 @@
     const guidelinesModal = document.getElementById('guidelinesModal');
     const modalClose = document.getElementById('modalClose');
     const modalAgree = document.getElementById('modalAgree');
+    const sortSelect = document.getElementById('sortSelect');
 
     // Toggle submit/preview enabled state based on checkbox
     function updateActionButtons() {
@@ -488,9 +510,28 @@
     // Keep current user UID for quick checks
     let currentUID = null;
     auth.onAuthStateChanged(user => {
-      currentUID = user ? user.uid : null;
-      // Re-render is not necessary because snapshot listener handles updates,
-      // but delete button visibility depends on currentUID; re-run render by re-subscribing is avoided.
+      if (!user) {
+        // try to sign in anonymously automatically
+        auth.signInAnonymously().catch(() => {});
+        currentUID = null;
+      } else {
+        currentUID = user.uid;
+      }
+      // After auth change, it's helpful to re-render stars for visible jokes.
+      // The snapshot listener rebuilds the list when data changes — but auth change doesn't trigger that.
+      // So re-run a quick update of star UI for existing joke elements.
+      Array.from(jokeListEl.querySelectorAll('.joke')).forEach(j => {
+        const id = j.dataset.id;
+        const starsDiv = j.querySelector('.stars');
+        const avgSpan = j.querySelector('.avg');
+        if (id && starsDiv && avgSpan) updateStarsUI(id, starsDiv, avgSpan);
+        // show delete button only if admin
+        const del = j.querySelector('.icon-btn[aria-role="delete-btn"]');
+        if (del) {
+          if (currentUID && currentUID === adminUID) del.style.display = 'inline-flex';
+          else del.style.display = 'none';
+        }
+      });
     });
 
     // Create a single joke DOM node
@@ -522,11 +563,11 @@
           e.preventDefault();
           // sign in anonymously if not signed in yet
           if (!currentUID) {
-            auth.signInAnonymously().then(() => {
-              // currentUID will be available via auth.onAuthStateChanged
-              // small delay; in practice currentUID is set shortly after
-              setTimeout(()=> rateJoke(entry.id, v), 300);
-            }).catch(err=>{ console.error('Auth failed', err); alert('Unable to authenticate for rating.'); });
+            auth.signInAnonymously().catch(err => { console.error('Auth failed', err); alert('Unable to authenticate for rating.'); });
+            // rating will be attempted shortly after auth change — give a small delay to let currentUID be set
+            setTimeout(()=> {
+              if (currentUID) rateJoke(entry.id, v);
+            }, 450);
             return;
           }
           rateJoke(entry.id, v);
@@ -547,14 +588,15 @@
 
       const actions=document.createElement('div'); actions.className='joke-actions';
 
-      const del=document.createElement('button'); del.className='icon-btn'; del.innerHTML='Remove';
-      // Show delete only if currentUID matches adminUID
+      const del=document.createElement('button'); del.className='icon-btn'; del.setAttribute('aria-role','delete-btn'); del.innerHTML='Remove';
+      // Show delete only if currentUID matches adminUID (updated after auth change too)
       if (currentUID && currentUID === adminUID) {
         del.style.display = 'inline-flex';
       } else {
         del.style.display = 'none';
       }
       del.onclick = () => {
+        if (!confirm('Remove this joke?')) return;
         // attempt delete (Firestore rules will enforce server-side)
         db.collection('jokes').doc(entry.id).delete().catch(err => {
           console.error('Delete failed', err);
@@ -576,14 +618,11 @@
 
     // Update star buttons UI: highlight up to user's rating if exists; otherwise highlight by average (rounded)
     function updateStarsUI(jokeId, starsDiv, avgSpan){
-      // First set average display quickly (avgSpan may be passed)
-      // Now fetch user's rating for this joke (if signed in)
       const setHighlight = (userRating, avg) => {
         const avgRounded = Math.round((avg || 0));
         Array.from(starsDiv.children).forEach(btn => {
           const v = Number(btn.dataset.value);
           btn.classList.remove('star-on');
-          // if userRating exists, highlight to userRating else highlight to avgRounded
           if (userRating != null) {
             if (v <= userRating) btn.classList.add('star-on');
           } else {
@@ -612,7 +651,7 @@
       db.collection('jokes').doc(jokeId).collection('ratings').doc(currentUID).get().then(rdoc => {
         if (rdoc.exists) {
           const ur = rdoc.data().rating;
-          setHighlight(ur, rdoc.exists ? undefined : 0);
+          setHighlight(ur, undefined);
         } else {
           // no user rating: use average
           db.collection('jokes').doc(jokeId).get().then(jd => {
@@ -629,39 +668,130 @@
       });
     }
 
-    // Render jokes — order by ratingAverage desc, then time desc
-    function renderJokes(){
-      // Ensure all jokes have ratingAverage field (when added we set it to 0)
-      db.collection("jokes")
-        .orderBy("ratingAverage","desc")
-        .orderBy("time","desc")
-        .onSnapshot(snapshot=>{
-          jokeListEl.innerHTML='';
-          if(snapshot.empty){
-            const empty = document.createElement('div');
-            empty.className='empty';
-            empty.textContent='No entries yet — be the first to post a tasteful one-liner.';
-            jokeListEl.appendChild(empty);
-            return;
+    // -----------------------
+    // Query subscription + migration logic
+    // -----------------------
+    let unsubscribeCurrent = null;
+    let migrationTriggered = false;
+    let activeMode = sortSelect.value || 'best'; // 'best' or 'newest'
+
+    sortSelect.addEventListener('change', () => {
+      activeMode = sortSelect.value;
+      // Resubscribe depending on user selection
+      if (activeMode === 'newest') subscribeTimeQuery();
+      else subscribePrimaryQuery(); // best
+    });
+
+    async function migrateMissingRatingFields() {
+      if (migrationTriggered) return;
+      migrationTriggered = true;
+      try {
+        console.log('Starting migration: adding rating fields to old jokes (if any).');
+        const allDocs = await db.collection('jokes').get();
+        const batches = [];
+        let batch = db.batch();
+        let ops = 0;
+        allDocs.forEach(doc => {
+          const data = doc.data();
+          if (data.ratingAverage === undefined || data.ratingAverage === null) {
+            const ref = db.collection('jokes').doc(doc.id);
+            batch.update(ref, {
+              ratingSum: data.ratingSum || 0,
+              ratingCount: data.ratingCount || 0,
+              ratingAverage: data.ratingAverage || 0
+            });
+            ops++;
+            if (ops >= 400) { // keep batch < 500
+              batches.push(batch.commit());
+              batch = db.batch();
+              ops = 0;
+            }
           }
-          snapshot.forEach(doc=>{
-            const data = doc.data();
-            const entry = {
-              id: doc.id,
-              author: data.author,
-              text: data.text,
-              time: data.time ? data.time.toDate() : new Date(),
-              ratingAverage: data.ratingAverage || 0,
-              ratingCount: data.ratingCount || 0
-            };
-            jokeListEl.appendChild(createJoke(entry));
-          });
-        }, err => {
-          console.error('Snapshot error', err);
         });
+        if (ops > 0) batches.push(batch.commit());
+        await Promise.all(batches);
+        console.log('Migration complete (old docs updated). Attempting rating-order subscription again.');
+        // After migration, try subscribing to rating-based query again:
+        if (activeMode === 'best') subscribePrimaryQuery();
+      } catch (err) {
+        console.warn('Migration failed or blocked by rules:', err);
+      }
     }
 
-    // Rate a joke: transactionally update joke aggregates and user rating doc
+    function clearAndRenderSnapshot(snapshot) {
+      jokeListEl.innerHTML = '';
+      if (snapshot.empty) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = 'No entries yet — be the first to post a tasteful one-liner.';
+        jokeListEl.appendChild(empty);
+        return;
+      }
+      snapshot.forEach(doc=>{
+        const data = doc.data();
+        const entry = {
+          id: doc.id,
+          author: data.author,
+          text: data.text,
+          time: data.time ? data.time.toDate() : new Date(),
+          ratingAverage: data.ratingAverage || 0,
+          ratingCount: data.ratingCount || 0
+        };
+        jokeListEl.appendChild(createJoke(entry));
+      });
+    }
+
+    function subscribePrimaryQuery() {
+      // rating-first ordering (best)
+      if (unsubscribeCurrent) { unsubscribeCurrent(); unsubscribeCurrent = null; }
+      try {
+        const q = db.collection("jokes").orderBy("ratingAverage","desc").orderBy("time","desc");
+        unsubscribeCurrent = q.onSnapshot(snapshot => {
+          clearAndRenderSnapshot(snapshot);
+        }, err => {
+          console.error('Primary (rating) query failed:', err);
+          // If index missing or permission error, fallback to time query.
+          fallbackToTimeQuery(err);
+        });
+      } catch (e) {
+        console.error('Primary subscription error:', e);
+        fallbackToTimeQuery(e);
+      }
+    }
+
+    function subscribeTimeQuery() {
+      if (unsubscribeCurrent) { unsubscribeCurrent(); unsubscribeCurrent = null; }
+      const q = db.collection("jokes").orderBy("time","desc");
+      unsubscribeCurrent = q.onSnapshot(snapshot => {
+        clearAndRenderSnapshot(snapshot);
+      }, err => {
+        console.error('Time-order query failed:', err);
+        jokeListEl.innerHTML = '';
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = 'Unable to load jokes (check console for details).';
+        jokeListEl.appendChild(empty);
+      });
+    }
+
+    function fallbackToTimeQuery(err) {
+      console.warn('Falling back to time-ordered query because rating-based query failed or index is missing.', err);
+      if (unsubscribeCurrent) { unsubscribeCurrent(); unsubscribeCurrent = null; }
+      subscribeTimeQuery();
+      // Trigger migration attempt so documents get rating fields added;
+      // after migration we attempt to resubscribe to the primary rating query.
+      migrateMissingRatingFields();
+    }
+
+    // entry point
+    function renderJokes(){
+      if (activeMode === 'newest') subscribeTimeQuery();
+      else subscribePrimaryQuery();
+    }
+
+    // -----------------------
+    // Rating transaction
+    // -----------------------
     function rateJoke(jokeId, newRating){
       if (!currentUID) {
         alert('Signing you in anonymously to save your rating...');
@@ -694,7 +824,7 @@
         // update aggregate fields on joke document
         tx.update(jokeRef, { ratingSum: ratingSum, ratingCount: ratingCount, ratingAverage: ratingAverage });
       }).then(()=> {
-        // success; the snapshot listener will update UI
+        // success; snapshot will reflect changes
       }).catch(err => {
         console.error('Rating transaction failed', err);
         alert('Failed to save rating. Please try again.');
@@ -713,11 +843,15 @@
         ratingSum: 0,
         ratingCount: 0,
         ratingAverage: 0
+      }).then(()=> {
+        // optionally reset fields
+        jokeInput.value=''; authorInput.value='';
+        // If user is currently viewing 'best' mode, we may need to ensure the new doc shows up (it has 0 average).
+        // The snapshot listener will handle that automatically.
       }).catch(err => {
         console.error('Add failed', err);
         alert('Failed to submit. Please try again.');
       });
-      jokeInput.value=''; authorInput.value='';
     });
 
     previewBtn.addEventListener('click',()=>{
