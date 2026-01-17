@@ -1,372 +1,183 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="description" content="LOHS Comedy Club — tasteful, modern joke wall." />
-  <title>LOHS Comedy Club — Refined Joke Wall</title>
-
-  <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:wght@500;700&display=swap" rel="stylesheet">
-
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
+  <meta charset="UTF-8">
+  <title>LOHS Comedy Club</title>
   <style>
-    :root{
-      --bg-outer: #e8e8e8;
-      --bg-inner: #ffffff;
-      --muted: #6b6b6b;
-      --text: #212121;
-      --accent: #b0894b;
-      --accent-2: #d6c4a1;
-      --radius: 12px;
-      --shadow-1: 0 6px 20px rgba(20,20,20,0.06);
-      --shadow-2: 0 2px 6px rgba(20,20,20,0.06);
-    }
-
-    html, body {height: 100%; margin: 0; padding: 0;}
-    body{
-      margin:0;
-      background: linear-gradient(180deg, var(--bg-outer) 0%, #f7f7f7 100%);
-      color: var(--text);
-      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    body {
+      font-family: 'Helvetica Neue', sans-serif;
+      background: linear-gradient(to bottom, #f2f2f2, #d9d9d9);
+      color: #333;
       display: flex;
-      justify-content: center;
-      padding: 48px 20px;
-    }
-
-    .container{
-      width:100%;
-      max-width:1024px;
-      min-height: 600px;
-    }
-
-    header{
-      display:flex;
-      gap:20px;
-      align-items:center;
-      margin-bottom:36px;
-    }
-
-    .brand h1{
-      margin:0;
-      font-family: "Playfair Display", serif;
-      font-size:28px;
-      color: var(--text);
-      font-weight:600;
-    }
-
-    .brand p{
-      margin:0;
-      color:var(--muted);
-      font-size:14px;
-    }
-
-    .card{
-      background: var(--bg-inner);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-1);
-      padding:40px;
-    }
-
-    .intro{
-      display:flex;
-      gap:24px;
-      align-items:center;
-      margin-bottom:24px;
-    }
-
-    .intro h2{
-      margin:0;
-      font-family:"Playfair Display", serif;
-      font-size:22px;
-      color:var(--text);
-      font-weight:600;
-    }
-
-    .intro p{
-      margin:6px 0 0 0;
-      color:var(--muted);
-      font-size:14px;
-    }
-
-    /* Form */
-    form.joke-form{
-      display:flex;
       flex-direction: column;
-      gap:12px;
-      margin-top:18px;
-      margin-bottom:18px;
+      align-items: center;
+      padding: 20px;
     }
-
-    .field {
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      width:100%;
+    .joke-box {
+      background: white;
+      padding: 15px 20px;
+      margin: 10px 0;
+      border-radius: 12px;
+      width: 80%;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      position: relative;
     }
-
-    input[type="text"], textarea {
-      width:100%;
-      padding:14px 16px;
-      border-radius:10px;
-      border:1px solid rgba(0,0,0,0.06);
-      background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(248,247,246,0.95));
-      font-size:15px;
-      color:var(--text);
-      resize: vertical;
-      min-height:50px;
-      box-shadow: var(--shadow-2);
+    .author { font-weight: bold; margin-bottom: 5px; }
+    .text { margin-bottom: 10px; }
+    .delete-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: #e74c3c;
+      border: none;
+      color: white;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
     }
-
-    .form-actions{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      justify-content:flex-end;
+    #form {
+      display: flex;
+      margin-top: 20px;
+      width: 80%;
     }
-
-    button{
-      font-family: "Inter", sans-serif;
-      font-weight:600;
-      font-size:14px;
-      padding:10px 16px;
-      border-radius:8px;
-      border:none;
-      cursor:pointer;
-      transition: all 180ms ease;
+    #author, #text {
+      flex: 1;
+      padding: 10px;
+      margin-right: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      font-size: 14px;
     }
-
-    #submitBtn{
-      background: var(--accent);
-      color:white;
+    #submit-btn, #preview-btn {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
     }
-    #submitBtn:hover{opacity:0.9;transform:translateY(-2px);}
-    #previewBtn{
-      background: var(--accent-2);
-      color:#222;
+    #submit-btn {
+      background: #3498db;
+      color: white;
+      margin-right: 5px;
     }
-    #previewBtn:hover{opacity:0.9;transform:translateY(-2px);}
-
-    /* Joke list */
-    .joke-list{
-      margin-top:12px;
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-    }
-
-    .joke {
-      display:flex;
-      gap:16px;
-      align-items:flex-start;
-      padding:18px;
-      border-radius:12px;
-      background: linear-gradient(180deg, var(--bg-inner), #fdfcfb);
-      border: 1px solid rgba(0,0,0,0.04);
-      box-shadow: var(--shadow-2);
-      position:relative;
-    }
-
-    .joke::before{
-      content:"";
-      position:absolute;
-      left:0;
-      top:0;
-      bottom:0;
-      width:6px;
-      border-top-left-radius:12px;
-      border-bottom-left-radius:12px;
-      background: linear-gradient(180deg, var(--accent), var(--accent-2));
-    }
-
-    .joke-content{
-      flex:1;
-    }
-
-    .meta{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      margin-bottom:6px;
-    }
-
-    .meta .who{
-      font-weight:700;
-      font-size:13px;
-      color:var(--text);
-    }
-
-    .meta .time{
-      font-size:12px;
-      color:var(--muted);
-    }
-
-    .joke-text{
-      font-size:15px;
-      color:var(--text);
-      line-height:1.5;
-      white-space:pre-wrap;
-    }
-
-    .joke-actions{
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      align-items:flex-end;
-    }
-
-    .icon-btn {
-      background:transparent;
-      border:none;
-      cursor:pointer;
-      padding:6px 8px;
-      font-size:13px;
-      color:var(--muted);
-      border-radius:8px;
-      transition:all 160ms ease;
-    }
-
-    .icon-btn:hover{
-      color:var(--text);
-      background:rgba(0,0,0,0.03);
-      transform:translateY(-2px);
-    }
-
-    .empty {
-      padding:28px;
-      border-radius:10px;
-      background:linear-gradient(180deg, rgba(255,255,255,0.8), rgba(250,249,247,0.8));
-      text-align:center;
-      color:var(--muted);
-      font-size:15px;
-      border:1px dashed rgba(0,0,0,0.04);
+    #preview-btn {
+      background: #95a5a6;
+      color: white;
     }
   </style>
 </head>
-
 <body>
-  <div class="container">
-    <header class="brand">
-      <div>
-        <h1>LOHS Comedy Club</h1>
-        <p>Refined Joke Wall — share a moment of levity</p>
-      </div>
-    </header>
+  <h1>Welcome to the LOHS Comedy Club!</h1>
+  <div id="jokes-container"></div>
 
-    <main class="card" role="main" aria-labelledby="page-title">
-      <div class="intro">
-        <div class="title">
-          <h2 id="page-title">Joke Wall — tasteful and timeless</h2>
-          <p class="small">Post a short joke, aphorism, or witty line. The design favors clarity, space, and a classic palette.</p>
-        </div>
-      </div>
-
-      <form class="joke-form" id="jokeForm" onsubmit="return false;">
-        <div class="field">
-          <label for="author">Name (optional)</label>
-          <input id="author" type="text" placeholder="Your name (or leave blank for Anonymous)" maxlength="40" />
-        </div>
-
-        <div class="field">
-          <label for="joke">Your Line</label>
-          <textarea id="joke" placeholder="Write something short and funny…" maxlength="800"></textarea>
-        </div>
-
-        <div class="form-actions">
-          <button type="button" id="previewBtn">Preview</button>
-          <button type="submit" id="submitBtn">Submit</button>
-        </div>
-      </form>
-
-      <div id="jokeListArea">
-        <div id="jokeList" class="joke-list" aria-live="polite"></div>
-      </div>
-    </main>
+  <div id="form">
+    <input type="text" id="author" placeholder="Your name">
+    <input type="text" id="text" placeholder="Your joke">
+    <button id="submit-btn">Submit</button>
+    <button id="preview-btn">Preview</button>
   </div>
 
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+
   <script>
-    // Initialize Firebase
+    // Your Firebase config
     const firebaseConfig = {
-      apiKey: "AIzaSyBWNQ1vM2Ki4ReBCOrrCD8fC1iVhwlsX8",
+      apiKey: "AIzaSyBWNQ1vM2Ki4ReBCOrrCD8XfC1iVhwlsX8",
       authDomain: "comedy-club-alpha.firebaseapp.com",
       projectId: "comedy-club-alpha",
-      storageBucket: "comedy-club-alpha.firebasestorage.app",
+      storageBucket: "comedy-club-alpha.appspot.com",
       messagingSenderId: "251530882249",
-      appId: "1:251530882249:web:4b5c1aa8e2de9273a0b118",
-      measurementId: "G-JZXQ7ZXQ7M"
+      appId: "1:251530882249:web:4b5c1aa8e2de9273a0b118"
     };
-    firebase.initializeApp(firebaseConfig);
+    const app = firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const auth = firebase.auth();
 
-    const jokeListEl = document.getElementById('jokeList');
-    const jokeInput = document.getElementById('joke');
-    const authorInput = document.getElementById('author');
-    const submitBtn = document.getElementById('submitBtn');
-    const previewBtn = document.getElementById('previewBtn');
+    // Your UID as admin
+    const adminUID = "YOUR_UID_HERE"; // replace with your actual UID
 
-    function ts(){return new Date();}
-    function fmtTime(d){return d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
-    function createJoke(entry){
-      const wrap=document.createElement('article'); wrap.className='joke'; wrap.dataset.id=entry.id;
-      const content=document.createElement('div'); content.className='joke-content';
-      const meta=document.createElement('div'); meta.className='meta';
-      const who=document.createElement('div'); who.className='who'; who.textContent=entry.author||'Anonymous';
-      const time=document.createElement('div'); time.className='time'; time.textContent=fmtTime(entry.time);
-      meta.appendChild(who); meta.appendChild(time);
-      const text=document.createElement('div'); text.className='joke-text'; text.textContent=entry.text;
-      content.appendChild(meta); content.appendChild(text);
-      const actions=document.createElement('div'); actions.className='joke-actions';
-      const del=document.createElement('button'); del.className='icon-btn'; del.innerHTML='Remove';
-      del.onclick=()=>{db.collection('jokes').doc(entry.id).delete();}
-      const copy=document.createElement('button'); copy.className='icon-btn'; copy.innerHTML='Copy';
-      copy.onclick=()=>{navigator.clipboard.writeText(`${entry.text} — ${entry.author||'Anonymous'}`).then(()=>{copy.textContent='Copied'; setTimeout(()=>copy.textContent='Copy',1200);});};
-      actions.appendChild(copy); actions.appendChild(del);
-      wrap.appendChild(content); wrap.appendChild(actions);
-      return wrap;
-    }
+    // Sign in silently (anonymous)
+    auth.onAuthStateChanged(user => {
+      if(!user) {
+        auth.signInAnonymously().catch(console.error);
+      }
+    });
 
-    function renderJokes(){
-      db.collection("jokes").orderBy("time","desc").onSnapshot(snapshot=>{
-        jokeListEl.innerHTML='';
-        if(snapshot.empty){
-          const empty = document.createElement('div');
-          empty.className='empty';
-          empty.textContent='No entries yet — be the first to post a tasteful one-liner.';
-          jokeListEl.appendChild(empty);
-          return;
+    const container = document.getElementById("jokes-container");
+    const authorInput = document.getElementById("author");
+    const textInput = document.getElementById("text");
+    const submitBtn = document.getElementById("submit-btn");
+    const previewBtn = document.getElementById("preview-btn");
+
+    function createJokeElement(id, data) {
+      const div = document.createElement("div");
+      div.className = "joke-box";
+      const authorEl = document.createElement("div");
+      authorEl.className = "author";
+      authorEl.textContent = data.author;
+      const textEl = document.createElement("div");
+      textEl.className = "text";
+      textEl.textContent = data.text;
+      div.appendChild(authorEl);
+      div.appendChild(textEl);
+
+      const del = document.createElement("button");
+      del.className = "delete-btn";
+      del.textContent = "Remove";
+
+      // Only show delete button if you are admin
+      auth.onAuthStateChanged(user => {
+        if(user && user.uid === adminUID){
+          del.style.display = "block";
+        } else {
+          del.style.display = "none";
         }
-        snapshot.forEach(doc=>{
-          const data = doc.data();
-          const entry = {id:doc.id, author:data.author, text:data.text, time:data.time ? data.time.toDate() : new Date()};
-          jokeListEl.appendChild(createJoke(entry));
-        });
       });
+
+      del.onclick = () => {
+        db.collection("jokes").doc(id).delete().catch(err => alert("Cannot delete: "+err));
+      };
+      div.appendChild(del);
+
+      return div;
     }
 
-    submitBtn.addEventListener('click',()=>{
-      const text=jokeInput.value.trim();
-      if(!text) return;
+    // Listen for jokes in real-time
+    db.collection("jokes").orderBy("time").onSnapshot(snapshot => {
+      container.innerHTML = "";
+      snapshot.forEach(doc => {
+        container.appendChild(createJokeElement(doc.id, doc.data()));
+      });
+    });
+
+    // Submit joke
+    submitBtn.onclick = () => {
+      const author = authorInput.value || "Anonymous";
+      const text = textInput.value;
+      if(text.trim() === "") return;
       db.collection("jokes").add({
-        author: authorInput.value.trim() || "Anonymous",
+        author: author,
         text: text,
         time: firebase.firestore.FieldValue.serverTimestamp()
       });
-      jokeInput.value=''; authorInput.value='';
-    });
+      authorInput.value = "";
+      textInput.value = "";
+    };
 
-    previewBtn.addEventListener('click',()=>{
-      const text=jokeInput.value.trim();
-      if(!text) return;
-      const entry={id:'tmp',author:authorInput.value||'You (preview)',text:text,time:new Date()};
-      const el=createJoke(entry);
-      jokeListEl.insertBefore(el,jokeListEl.firstChild);
-      setTimeout(()=>{if(el.parentNode) el.remove();},3000);
-    });
-
-    renderJokes();
+    // Preview joke
+    previewBtn.onclick = () => {
+      const div = document.createElement("div");
+      div.className = "joke-box";
+      const author = authorInput.value || "Anonymous";
+      const text = textInput.value;
+      div.innerHTML = `<div class="author">${author}</div><div class="text">${text}</div>`;
+      container.insertBefore(div, container.firstChild);
+      setTimeout(()=>div.remove(), 3000);
+    };
   </script>
 </body>
 </html>
