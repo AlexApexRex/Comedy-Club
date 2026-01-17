@@ -1,260 +1,341 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<meta name="description" content="LOHS Comedy Club — tasteful, modern joke wall." />
-<title>LOHS Comedy Club — Refined Joke Wall</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="LOHS Comedy Club — tasteful, modern joke wall." />
+  <title>LOHS Comedy Club — Refined Joke Wall</title>
 
-<!-- Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:wght@500;700&display=swap" rel="stylesheet">
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:wght@500;700&display=swap" rel="stylesheet">
 
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
-<style>
-/* --- keep your styles exactly as before, unchanged --- */
-:root{--bg-outer:#e8e8e8;--bg-inner:#fff;--muted:#6b6b6b;--text:#212121;--accent:#b0894b;--accent-2:#d6c4a1;--radius:12px;--shadow-1:0 6px 20px rgba(20,20,20,0.06);--shadow-2:0 2px 6px rgba(20,20,20,0.06);}
-html,body{height:100%;margin:0;padding:0;}
-body{margin:0;background:linear-gradient(180deg,var(--bg-outer) 0%,#f7f7f7 100%);color:var(--text);font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial;display:flex;justify-content:center;padding:48px 20px;}
-.container{width:100%;max-width:1024px;min-height:600px;}
-header{display:flex;gap:20px;align-items:center;margin-bottom:36px;}
-.brand h1{margin:0;font-family:"Playfair Display",serif;font-size:28px;color:var(--text);font-weight:600;}
-.brand p{margin:0;color:var(--muted);font-size:14px;}
-.card{background:var(--bg-inner);border-radius:var(--radius);box-shadow:var(--shadow-1);padding:40px;}
-.intro{display:flex;gap:24px;align-items:center;margin-bottom:24px;}
-.intro h2{margin:0;font-family:"Playfair Display",serif;font-size:22px;color:var(--text);font-weight:600;}
-.intro p{margin:6px 0 0 0;color:var(--muted);font-size:14px;}
-form.joke-form{display:flex;flex-direction:column;gap:12px;margin-top:18px;margin-bottom:18px;}
-.field{display:flex;flex-direction:column;gap:8px;width:100%;}
-input[type="text"],textarea{width:100%;padding:14px 16px;border-radius:10px;border:1px solid rgba(0,0,0,0.06);background:linear-gradient(180deg,rgba(255,255,255,0.95),rgba(248,247,246,0.95));font-size:15px;color:var(--text);resize:vertical;min-height:50px;box-shadow:var(--shadow-2);transition:all 0.18s ease;}
-input[type="text"]:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 8px rgba(176,137,75,0.2);}
-.agreement{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:14px;margin-bottom:4px;}
-.agreement a{color:var(--text);text-decoration:underline;cursor:pointer;font-weight:600;}
-.form-actions{display:flex;gap:10px;align-items:center;justify-content:flex-end;}
-button{font-family:"Inter",sans-serif;font-weight:600;font-size:14px;padding:10px 16px;border-radius:8px;border:none;cursor:pointer;transition:all 180ms ease;}
-#submitBtn{background:var(--accent);color:white;}
-#submitBtn:hover{opacity:0.9;transform:translateY(-2px);}
-#previewBtn{background:var(--accent-2);color:#222;}
-#previewBtn:hover{opacity:0.9;transform:translateY(-2px);}
-button:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
-.joke-list{margin-top:12px;display:flex;flex-direction:column;gap:12px;}
-.joke{display:flex;gap:16px;align-items:flex-start;padding:18px;border-radius:12px;background:linear-gradient(180deg,var(--bg-inner),#fdfcfb);border:1px solid rgba(0,0,0,0.04);box-shadow:var(--shadow-2);position:relative;transition:transform 0.18s ease,box-shadow 0.18s ease;}
-.joke:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(20,20,20,0.08);}
-.joke::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;border-top-left-radius:12px;border-bottom-left-radius:12px;background:linear-gradient(180deg,var(--accent),var(--accent-2));}
-.joke-content{flex:1;}
-.meta{display:flex;gap:10px;align-items:center;margin-bottom:6px;}
-.meta .who{font-weight:700;font-size:13px;color:var(--text);}
-.meta .time{font-size:12px;color:var(--muted);}
-.joke-text{font-size:15px;color:var(--text);line-height:1.5;white-space:pre-wrap;}
-.joke-actions{display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
-.icon-btn{background:transparent;border:none;cursor:pointer;padding:6px 8px;font-size:13px;color:var(--muted);border-radius:8px;transition:all 160ms ease;}
-.icon-btn:hover{color:var(--text);background:rgba(0,0,0,0.03);transform:translateY(-2px);}
-.empty{padding:28px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.8),rgba(250,249,247,0.8));text-align:center;color:var(--muted);font-size:15px;border:1px dashed rgba(0,0,0,0.04);}
-.modal-backdrop{position:fixed;inset:0;background:rgba(12,12,12,0.45);display:flex;align-items:center;justify-content:center;z-index:9999;opacity:0;pointer-events:none;transition:opacity 160ms ease;}
-.modal-backdrop.open{opacity:1;pointer-events:auto;}
-.modal{width:min(820px,94%);background:var(--bg-inner);border-radius:12px;padding:22px;box-shadow:0 12px 40px rgba(20,20,20,0.18);max-height:80vh;overflow:auto;}
-.modal h3{margin-top:0;font-family:"Playfair Display",serif;}
-.modal p{color:var(--muted);line-height:1.5;}
-.modal .modal-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;}
-.modal .close-btn{background:transparent;border:1px solid rgba(0,0,0,0.06);padding:8px 12px;border-radius:8px;cursor:pointer;}
-.modal .agree-btn{background:var(--accent);color:#fff;padding:8px 14px;border-radius:8px;border:none;cursor:pointer;}
-</style>
-</head>
-<body>
-<div class="container">
-<header class="brand">
-  <div>
-    <h1>LOHS Comedy Club</h1>
-    <p>Refined Joke Wall — share a moment of levity</p>
-  </div>
-</header>
-
-<main class="card" role="main" aria-labelledby="page-title">
-<div class="intro">
-  <div class="title">
-    <h2 id="page-title">Joke Wall — tasteful and timeless</h2>
-    <p class="small">Post a short joke, aphorism, or witty line.</p>
-  </div>
-</div>
-
-<div class="agreement" style="margin-bottom:12px;">
-  <input id="agreeCheckbox" type="checkbox" />
-  <label for="agreeCheckbox" style="color:var(--muted);font-size:14px;">
-    I have read and agree to the
-    <a id="guidelinesBtn">Community Guidelines</a>
-  </label>
-</div>
-
-<form class="joke-form" id="jokeForm" onsubmit="return false;">
-  <div class="field">
-    <label for="author">Name (optional)</label>
-    <input id="author" type="text" placeholder="Your name (or leave blank for Anonymous)" maxlength="40" />
-  </div>
-
-  <div class="field">
-    <label for="joke">Your Line</label>
-    <textarea id="joke" placeholder="Write something short and funny…" maxlength="800"></textarea>
-  </div>
-
-  <div class="field">
-    <label for="sortFilter">Sort jokes by:</label>
-    <select id="sortFilter">
-      <option value="rating">Best Rating</option>
-      <option value="newest">Newest First</option>
-    </select>
-  </div>
-
-  <div class="form-actions">
-    <button type="button" id="previewBtn" disabled>Preview</button>
-    <button type="submit" id="submitBtn" disabled>Submit</button>
-  </div>
-</form>
-
-<div id="jokeListArea">
-  <div id="jokeList" class="joke-list" aria-live="polite"></div>
-</div>
-</main>
-</div>
-
-<div id="guidelinesModal" class="modal-backdrop" aria-hidden="true">
-<div class="modal" role="dialog" aria-labelledby="modalTitle">
-  <h3 id="modalTitle">Community Guidelines</h3>
-  <p>Please do not post offensive content...</p>
-  <div class="modal-actions">
-    <button class="close-btn" id="modalClose">Close</button>
-    <button class="agree-btn" id="modalAgree">I agree</button>
-  </div>
-</div>
-</div>
-
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyBWNQ1vM2Ki4ReBCOrrCD8XfC1iVhwlsX8",
-  authDomain: "comedy-club-alpha.firebaseapp.com",
-  projectId: "comedy-club-alpha",
-  storageBucket: "comedy-club-alpha.appspot.com",
-  messagingSenderId: "251530882249",
-  appId: "1:251530882249:web:4b5c1aa8e2de9273a0b118",
-  measurementId: "G-JZXQ7ZXQ7M"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();
-
-// Admin UID (replace with your UID after login)
-const adminUID = "viFrocQunxR1y0Pma5DHihAVeWF2";
-
-let currentUID = null;
-
-// --- Anonymous sign-in ---
-auth.onAuthStateChanged(user => {
-  if(!user) {
-    auth.signInAnonymously().catch(err => console.error("Anonymous sign-in failed:", err));
-  } else {
-    currentUID = user.uid;
-    console.log("Signed in UID:", currentUID);
-  }
-});
-
-// --- UI elements ---
-const jokeListEl = document.getElementById('jokeList');
-const jokeInput = document.getElementById('joke');
-const authorInput = document.getElementById('author');
-const submitBtn = document.getElementById('submitBtn');
-const previewBtn = document.getElementById('previewBtn');
-const agreeCheckbox = document.getElementById('agreeCheckbox');
-const sortFilter = document.getElementById('sortFilter');
-
-// Enable buttons only if guidelines checked
-function updateActionButtons() {
-  const ok = agreeCheckbox.checked;
-  submitBtn.disabled = !ok;
-  previewBtn.disabled = !ok;
-}
-agreeCheckbox.addEventListener('change', updateActionButtons);
-
-// --- Create joke element with ratings ---
-function createJoke(entry){
-  const wrap = document.createElement('article'); wrap.className='joke'; wrap.dataset.id=entry.id;
-  const content = document.createElement('div'); content.className='joke-content';
-  const meta = document.createElement('div'); meta.className='meta';
-  const who = document.createElement('div'); who.className='who'; who.textContent=entry.author||'Anonymous';
-  const time = document.createElement('div'); time.className='time'; time.textContent=new Date(entry.time?.toDate?.()||entry.time).toLocaleString();
-  meta.appendChild(who); meta.appendChild(time);
-  const text = document.createElement('div'); text.className='joke-text'; text.textContent=entry.text;
-
-  // Rating display
-  const ratingDiv = document.createElement('div');
-  ratingDiv.style.marginTop='6px';
-  const avg = entry.ratingCount ? (entry.ratingSum/entry.ratingCount).toFixed(1) : '0';
-  ratingDiv.textContent = `Average rating: ${avg} (${entry.ratingCount||0} votes)`;
-
-  content.appendChild(meta);
-  content.appendChild(text);
-  content.appendChild(ratingDiv);
-
-  // Actions
-  const actions = document.createElement('div'); actions.className='joke-actions';
-
-  // Delete button (only admin)
-  const del = document.createElement('button'); del.className='icon-btn'; del.textContent='Remove';
-  del.style.display = (currentUID===adminUID) ? 'inline-flex':'none';
-  del.onclick = ()=>db.collection('jokes').doc(entry.id).delete().catch(console.error);
-
-  actions.appendChild(del);
-  wrap.appendChild(content);
-  wrap.appendChild(actions);
-
-  return wrap;
-}
-
-// --- Render jokes ---
-function renderJokes(){
-  let query = db.collection("jokes");
-  if(sortFilter.value==='rating'){
-    query = query.orderBy("ratingSum","desc");
-  } else {
-    query = query.orderBy("time","desc");
-  }
-  query.onSnapshot(snapshot=>{
-    jokeListEl.innerHTML='';
-    if(snapshot.empty){
-      const empty = document.createElement('div'); empty.className='empty'; empty.textContent='No jokes yet.';
-      jokeListEl.appendChild(empty);
-      return;
+  <style>
+    /* --- Your existing CSS --- */
+    :root{
+      --bg-outer: #e8e8e8;
+      --bg-inner: #ffffff;
+      --muted: #6b6b6b;
+      --text: #212121;
+      --accent: #b0894b;
+      --accent-2: #d6c4a1;
+      --radius: 12px;
+      --shadow-1: 0 6px 20px rgba(20,20,20,0.06);
+      --shadow-2: 0 2px 6px rgba(20,20,20,0.06);
     }
-    snapshot.forEach(doc=>{
-      jokeListEl.appendChild(createJoke({...doc.data(),id:doc.id}));
+    html, body {height: 100%; margin: 0; padding: 0;}
+    body{
+      margin:0;
+      background: linear-gradient(180deg, var(--bg-outer) 0%, #f7f7f7 100%);
+      color: var(--text);
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      display: flex;
+      justify-content: center;
+      padding: 48px 20px;
+    }
+    .container{width:100%;max-width:1024px;min-height:600px;}
+    header{display:flex;gap:20px;align-items:center;margin-bottom:36px;}
+    .brand h1{margin:0;font-family:"Playfair Display", serif;font-size:28px;color:var(--text);font-weight:600;}
+    .brand p{margin:0;color:var(--muted);font-size:14px;}
+    .card{background: var(--bg-inner);border-radius: var(--radius);box-shadow: var(--shadow-1);padding:40px;}
+    .intro{display:flex;gap:24px;align-items:center;margin-bottom:24px;}
+    .intro h2{margin:0;font-family:"Playfair Display", serif;font-size:22px;color:var(--text);font-weight:600;}
+    .intro p{margin:6px 0 0 0;color:var(--muted);font-size:14px;}
+    form.joke-form{display:flex;flex-direction: column;gap:12px;margin-top:18px;margin-bottom:18px;}
+    .field{display:flex;flex-direction:column;gap:8px;width:100%;}
+    input[type="text"], textarea{width:100%;padding:14px 16px;border-radius:10px;border:1px solid rgba(0,0,0,0.06);background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(248,247,246,0.95));font-size:15px;color:var(--text);resize: vertical;min-height:50px;box-shadow: var(--shadow-2);transition: all 0.18s ease;}
+    input[type="text"]:focus, textarea:focus{outline: none;border-color: var(--accent);box-shadow: 0 0 8px rgba(176,137,75,0.2);}
+    .agreement{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:14px;margin-bottom:4px;}
+    .agreement a {color:var(--text);text-decoration:underline;cursor:pointer;font-weight:600;}
+    .form-actions{display:flex;gap:10px;align-items:center;justify-content:flex-end;}
+    button{font-family: "Inter", sans-serif;font-weight:600;font-size:14px;padding:10px 16px;border-radius:8px;border:none;cursor:pointer;transition: all 180ms ease;}
+    #submitBtn{background: var(--accent);color:white;}
+    #submitBtn:hover{opacity:0.9; transform:translateY(-2px);}
+    #previewBtn{background: var(--accent-2);color:#222;}
+    #previewBtn:hover{opacity:0.9; transform:translateY(-2px);}
+    button:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+    .joke-list{margin-top:12px;display:flex;flex-direction:column;gap:12px;}
+    .joke{display:flex;gap:16px;align-items:flex-start;padding:18px;border-radius:12px;background: linear-gradient(180deg, var(--bg-inner), #fdfcfb);border: 1px solid rgba(0,0,0,0.04);box-shadow: var(--shadow-2);position:relative;transition: transform 0.18s ease, box-shadow 0.18s ease;}
+    .joke:hover{transform: translateY(-2px);box-shadow: 0 6px 18px rgba(20,20,20,0.08);}
+    .joke::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;border-top-left-radius:12px;border-bottom-left-radius:12px;background: linear-gradient(180deg, var(--accent), var(--accent-2));}
+    .joke-content{flex:1;}
+    .meta{display:flex;gap:10px;align-items:center;margin-bottom:6px;}
+    .meta .who{font-weight:700;font-size:13px;color:var(--text);}
+    .meta .time{font-size:12px;color:var(--muted);}
+    .joke-text{font-size:15px;color:var(--text);line-height:1.5;white-space:pre-wrap;}
+    .joke-actions{display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
+    .icon-btn {background:transparent;border:none;cursor:pointer;padding:6px 8px;font-size:13px;color:var(--muted);border-radius:8px;transition:all 160ms ease;}
+    .icon-btn:hover{color:var(--text);background:rgba(0,0,0,0.03);transform:translateY(-2px);}
+    .empty{padding:28px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.8), rgba(250,249,247,0.8));text-align:center;color:var(--muted);font-size:15px;border:1px dashed rgba(0,0,0,0.04);}
+    .filter-area{margin:10px 0;display:flex;gap:12px;align-items:center;}
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <header class="brand">
+      <div>
+        <h1>LOHS Comedy Club</h1>
+        <p>Refined Joke Wall — share a moment of levity</p>
+      </div>
+    </header>
+
+    <main class="card" role="main" aria-labelledby="page-title">
+      <div class="intro">
+        <div class="title">
+          <h2 id="page-title">Joke Wall — tasteful and timeless</h2>
+          <p class="small">Post a short joke, aphorism, or witty line. The design favors clarity, space, and a classic palette.</p>
+        </div>
+      </div>
+
+      <!-- Filter dropdown -->
+      <div class="filter-area">
+        <label for="sortSelect">Sort by:</label>
+        <select id="sortSelect">
+          <option value="rating">Best rating</option>
+          <option value="time">Newest</option>
+        </select>
+      </div>
+
+      <!-- Agreement -->
+      <div class="agreement">
+        <input id="agreeCheckbox" type="checkbox" />
+        <label for="agreeCheckbox">
+          I have read and agree to the <a id="guidelinesBtn">Community Guidelines</a>
+        </label>
+      </div>
+
+      <form class="joke-form" id="jokeForm" onsubmit="return false;">
+        <div class="field">
+          <label for="author">Name (optional)</label>
+          <input id="author" type="text" placeholder="Your name (or leave blank for Anonymous)" maxlength="40" />
+        </div>
+
+        <div class="field">
+          <label for="joke">Your Line</label>
+          <textarea id="joke" placeholder="Write something short and funny…" maxlength="800"></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" id="previewBtn" disabled>Preview</button>
+          <button type="submit" id="submitBtn" disabled>Submit</button>
+        </div>
+      </form>
+
+      <div id="jokeListArea">
+        <div id="jokeList" class="joke-list" aria-live="polite"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Guidelines Modal -->
+  <div id="guidelinesModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-labelledby="modalTitle">
+      <h3 id="modalTitle">Community Guidelines</h3>
+      <p>
+        Please do not post offensive content. Repeated or severe violations may result in content removal.
+      </p>
+      <div class="modal-actions">
+        <button class="close-btn" id="modalClose">Close</button>
+        <button class="agree-btn" id="modalAgree">I agree</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ------------------ FIREBASE CONFIG ------------------
+    const firebaseConfig = {
+      apiKey: "AIzaSyBWNQ1vM2Ki4ReBCOrrCD8XfC1iVhwlsX8",
+      authDomain: "comedy-club-alpha.firebaseapp.com",
+      projectId: "comedy-club-alpha",
+      storageBucket: "comedy-club-alpha.appspot.com",
+      messagingSenderId: "251530882249",
+      appId: "1:251530882249:web:4b5c1aa8e2de9273a0b118",
+      measurementId: "G-JZXQ7ZXQ7M"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    // ------------------ ADMIN UID ------------------
+    const adminUID = "viFrocQunxR1y0Pma5DHihAVeWF2"; // Replace with your uid from console
+
+    let currentUID = null;
+
+    // ------------------ AUTH ------------------
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        auth.signInAnonymously().catch(err => console.error("Anonymous sign-in failed:", err));
+      } else {
+        currentUID = user.uid;
+        console.log("Signed in UID:", currentUID);
+        if (agreeCheckbox.checked) submitBtn.disabled = false;
+      }
     });
-  });
-}
 
-// Sort filter
-sortFilter.addEventListener('change', renderJokes);
+    // ------------------ UI ELEMENTS ------------------
+    const jokeListEl = document.getElementById('jokeList');
+    const jokeInput = document.getElementById('joke');
+    const authorInput = document.getElementById('author');
+    const submitBtn = document.getElementById('submitBtn');
+    const previewBtn = document.getElementById('previewBtn');
+    const agreeCheckbox = document.getElementById('agreeCheckbox');
+    const sortSelect = document.getElementById('sortSelect');
+    const guidelinesBtn = document.getElementById('guidelinesBtn');
+    const guidelinesModal = document.getElementById('guidelinesModal');
+    const modalClose = document.getElementById('modalClose');
+    const modalAgree = document.getElementById('modalAgree');
 
-// Submit button
-submitBtn.addEventListener('click', async ()=>{
-  if(!agreeCheckbox.checked){ alert("Please read guidelines."); return;}
-  if(!auth.currentUser){ alert("Signing in..."); return;}
-  const text = jokeInput.value.trim();
-  if(!text) return;
-  await db.collection("jokes").add({
-    author: authorInput.value.trim()||"Anonymous",
-    text,
-    time: firebase.firestore.FieldValue.serverTimestamp(),
-    ratingSum:0,
-    ratingCount:0
-  });
-  jokeInput.value=''; authorInput.value='';
-});
+    // ------------------ ACTION BUTTONS ------------------
+    function updateActionButtons() {
+      const ok = agreeCheckbox.checked && currentUID !== null;
+      submitBtn.disabled = !ok;
+      previewBtn.disabled = !ok;
+    }
+    agreeCheckbox.addEventListener('change', updateActionButtons);
 
-// Initial render
-renderJokes();
-updateActionButtons();
-</script>
+    guidelinesBtn.addEventListener('click', () => {
+      guidelinesModal.classList.add('open');
+      guidelinesModal.setAttribute('aria-hidden','false');
+    });
+    modalClose.addEventListener('click', ()=>{
+      guidelinesModal.classList.remove('open');
+      guidelinesModal.setAttribute('aria-hidden','true');
+    });
+    modalAgree.addEventListener('click', ()=>{
+      agreeCheckbox.checked = true;
+      updateActionButtons();
+      guidelinesModal.classList.remove('open');
+      guidelinesModal.setAttribute('aria-hidden','true');
+    });
+    guidelinesModal.addEventListener('click', (e)=>{
+      if(e.target===guidelinesModal){
+        guidelinesModal.classList.remove('open');
+        guidelinesModal.setAttribute('aria-hidden','true');
+      }
+    });
+
+    // ------------------ CREATE JOKE ELEMENT ------------------
+    function createJoke(entry){
+      const wrap = document.createElement('article'); wrap.className='joke'; wrap.dataset.id=entry.id;
+      const content = document.createElement('div'); content.className='joke-content';
+      const meta = document.createElement('div'); meta.className='meta';
+      const who = document.createElement('div'); who.className='who'; who.textContent = entry.author || 'Anonymous';
+      const time = document.createElement('div'); time.className='time'; time.textContent = entry.time ? entry.time.toLocaleString() : '';
+      meta.appendChild(who); meta.appendChild(time);
+      const text = document.createElement('div'); text.className='joke-text'; text.textContent = entry.text;
+      content.appendChild(meta); content.appendChild(text);
+
+      // Average rating display
+      const avg = document.createElement('div'); avg.style.fontSize='12px'; avg.style.color='var(--muted)';
+      const ratingVal = entry.ratingCount ? (entry.ratingSum / entry.ratingCount).toFixed(1) : "0.0";
+      avg.textContent = `Rating: ${ratingVal} / 5 (${entry.ratingCount} votes)`;
+      content.appendChild(avg);
+
+      // Rating stars
+      const actions = document.createElement('div'); actions.className='joke-actions';
+      for(let i=1;i<=5;i++){
+        const star = document.createElement('button');
+        star.textContent='★';
+        star.className='icon-btn';
+        star.onclick = async ()=> {
+          if(!currentUID) { alert("Auth not ready yet"); return; }
+          const docRef = db.collection('jokes').doc(entry.id);
+          await db.runTransaction(async tx=>{
+            const doc = await tx.get(docRef);
+            const data = doc.data();
+            const newSum = (data.ratingSum||0)+i;
+            const newCount = (data.ratingCount||0)+1;
+            tx.update(docRef,{ratingSum:newSum,ratingCount:newCount});
+          });
+        };
+        actions.appendChild(star);
+      }
+
+      // Delete / Copy buttons
+      const del = document.createElement('button'); del.className='icon-btn'; del.textContent='Remove';
+      if(currentUID && currentUID===adminUID) del.style.display='inline-flex'; else del.style.display='none';
+      del.onclick = ()=> db.collection('jokes').doc(entry.id).delete();
+      const copy = document.createElement('button'); copy.className='icon-btn'; copy.textContent='Copy';
+      copy.onclick = ()=>{ navigator.clipboard.writeText(`${entry.text} — ${entry.author||'Anonymous'}`); };
+
+      actions.appendChild(copy); actions.appendChild(del);
+      wrap.appendChild(content); wrap.appendChild(actions);
+      return wrap;
+    }
+
+    // ------------------ RENDER JOKES ------------------
+    async function renderJokes(){
+      jokeListEl.innerHTML = '';
+      const sortField = sortSelect.value==='rating' ? 'ratingSum' : 'time';
+      let q = db.collection('jokes');
+      if(sortField==='rating'){
+        try {
+          q = q.orderBy('ratingSum','desc').orderBy('time','desc');
+        } catch(e){
+          console.warn("Rating index missing. Showing newest first."); 
+          q = q.orderBy('time','desc');
+        }
+      } else {
+        q = q.orderBy('time','desc');
+      }
+      const snapshot = await q.get();
+      if(snapshot.empty){
+        const empty = document.createElement('div'); empty.className='empty'; empty.textContent='No entries yet.';
+        jokeListEl.appendChild(empty);
+        return;
+      }
+      snapshot.forEach(doc=>{
+        const data = doc.data();
+        const entry = {
+          id: doc.id,
+          author: data.author,
+          text: data.text,
+          time: data.time ? data.time.toDate() : new Date(),
+          ratingSum: data.ratingSum || 0,
+          ratingCount: data.ratingCount || 0
+        };
+        jokeListEl.appendChild(createJoke(entry));
+      });
+    }
+
+    sortSelect.addEventListener('change', renderJokes);
+
+    // ------------------ SUBMIT HANDLER ------------------
+    submitBtn.addEventListener('click', async ()=>{
+      if(!agreeCheckbox.checked){ alert('Please confirm guidelines'); return; }
+      if(!currentUID){ alert('Auth not ready'); return; }
+      const text = jokeInput.value.trim();
+      if(!text) return;
+      try{
+        await db.collection('jokes').add({
+          author: authorInput.value.trim()||'Anonymous',
+          text: text,
+          time: firebase.firestore.FieldValue.serverTimestamp(),
+          ratingSum:0,
+          ratingCount:0
+        });
+        jokeInput.value=''; authorInput.value='';
+        renderJokes();
+      }catch(e){ console.error(e); alert('Failed to submit.'); }
+    });
+
+    previewBtn.addEventListener('click', ()=>{
+      const text = jokeInput.value.trim(); if(!text) return;
+      const entry = {id:'tmp',author:authorInput.value||'Preview',text:text,time:new Date(),ratingSum:0,ratingCount:0};
+      const el = createJoke(entry);
+      jokeListEl.insertBefore(el,jokeListEl.firstChild);
+      setTimeout(()=>{ if(el.parentNode) el.remove(); },3000);
+    });
+
+    // Initial render
+    updateActionButtons();
+    renderJokes();
+  </script>
 </body>
 </html>
