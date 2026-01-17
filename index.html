@@ -1,138 +1,563 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>LOHS Comedy Club</title>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-        /* General Body Styles */
-        body {
-            font-family: 'Roboto', sans-serif;
-            background: linear-gradient(to bottom, #fff3e0, #ffecd1);
-            color: #333;
-            max-width: 900px;
-            margin: 40px auto;
-            padding: 20px;
-        }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="LOHS Comedy Club — tasteful, modern joke wall." />
+  <title>LOHS Comedy Club — Refined Joke Wall</title>
 
-        /* Header */
-        h1 {
-            color: #ff6600;
-            text-align: center;
-            text-shadow: 1px 1px 3px #aaa;
-        }
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:wght@500;700&display=swap" rel="stylesheet">
 
-        p {
-            line-height: 1.6;
-        }
+  <style>
+    :root{
+      --bg: #f7f6f4;
+      --card: #ffffff;
+      --muted: #6b6b6b;
+      --text: #212121;
+      --accent: #b0894b; /* classy muted gold */
+      --accent-2: #d6c4a1;
+      --glass: rgba(255,255,255,0.7);
+      --radius: 12px;
+      --shadow-1: 0 6px 20px rgba(20,20,20,0.06);
+      --shadow-2: 0 2px 6px rgba(20,20,20,0.06);
+    }
 
-        /* Banner Image */
-        .banner {
-            width: 100%;
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
+    /* Page */
+    html,body{height:100%}
+    body{
+      margin:0;
+      background: linear-gradient(180deg, #fbfaf9 0%, #f3f1ef 100%);
+      color:var(--text);
+      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      -webkit-font-smoothing:antialiased;
+      -moz-osx-font-smoothing:grayscale;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding:48px 20px;
+    }
 
-        /* Joke Wall */
-        .joke-wall {
-            border-radius: 10px;
-            background-color: #fff8f0;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-            padding: 20px;
-            margin-top: 30px;
-        }
+    .container{
+      width:100%;
+      max-width:980px;
+      min-height:500px;
+    }
 
-        .joke-wall h2 {
-            color: #ff6600;
-            text-align: center;
-        }
+    header{
+      display:flex;
+      gap:20px;
+      align-items:center;
+      margin-bottom:28px;
+    }
 
-        /* Input and Button */
-        input {
-            padding: 10px;
-            width: 70%;
-            margin-right: 10px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-            font-size: 16px;
-        }
+    .brand {
+      display:flex;
+      flex-direction:column;
+      gap:6px;
+    }
 
-        button {
-            background-color: #ff6600;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            cursor: pointer;
-            border-radius: 5px;
-            font-weight: bold;
-            font-size: 16px;
-        }
+    .brand h1{
+      margin:0;
+      font-family: "Playfair Display", serif;
+      font-size:28px;
+      letter-spacing:0.2px;
+      color:var(--text);
+      font-weight:600;
+    }
 
-        button:hover {
-            background-color: #e65c00;
-        }
+    .brand p{
+      margin:0;
+      color:var(--muted);
+      font-size:13px;
+    }
 
-        /* Joke List */
-        .joke-list {
-            margin-top: 20px;
-        }
+    /* Top Actions */
+    .actions{
+      margin-left:auto;
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
 
-        .joke-list p {
-            background-color: #fff0d4;
-            border-left: 5px solid #ff6600;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            font-style: italic;
-        }
+    .btn {
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 16px;
+      border-radius:10px;
+      border:1px solid transparent;
+      background:transparent;
+      font-weight:600;
+      font-size:14px;
+      cursor:pointer;
+      transition:all 180ms ease;
+      color:var(--text);
+      box-shadow:none;
+    }
 
-        /* Footer */
-        footer {
-            text-align: center;
-            margin-top: 40px;
-            color: #777;
-            font-size: 14px;
-        }
-    </style>
+    .btn--primary{
+      background: linear-gradient(180deg, rgba(177,137,75,0.12), rgba(177,137,75,0.06));
+      border: 1px solid rgba(176,136,68,0.18);
+      color:var(--text);
+      padding:10px 18px;
+    }
+
+    .btn--primary:hover{
+      transform:translateY(-2px);
+      box-shadow: var(--shadow-1);
+    }
+
+    .btn--ghost{
+      background:transparent;
+      border: 1px solid rgba(0,0,0,0.06);
+      color:var(--muted);
+    }
+
+    /* Main card */
+    .card{
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-1);
+      padding:28px;
+    }
+
+    .intro{
+      display:flex;
+      gap:24px;
+      align-items:center;
+      margin-bottom:18px;
+    }
+
+    .intro .title {
+      flex:1;
+    }
+
+    .intro h2{
+      margin:0;
+      font-family:"Playfair Display", serif;
+      font-size:20px;
+      color:var(--text);
+      font-weight:600;
+    }
+
+    .intro p{
+      margin:6px 0 0 0;
+      color:var(--muted);
+      font-size:14px;
+    }
+
+    /* Form */
+    form.joke-form{
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+      margin-top:18px;
+      margin-bottom:18px;
+      flex-wrap:wrap;
+    }
+
+    .field {
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      flex:1 1 60%;
+      min-width:220px;
+    }
+
+    label{
+      font-size:12px;
+      color:var(--muted);
+      text-transform:uppercase;
+      letter-spacing:1px;
+    }
+
+    input[type="text"], textarea {
+      width:100%;
+      padding:12px 14px;
+      border-radius:10px;
+      border:1px solid rgba(0,0,0,0.06);
+      background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(248,247,246,0.9));
+      font-size:15px;
+      color:var(--text);
+      resize:vertical;
+      min-height:44px;
+      box-shadow: var(--shadow-2);
+    }
+
+    textarea{ min-height:86px; }
+
+    .form-actions {
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:flex-end;
+      flex: 0 0 auto;
+    }
+
+    .small{
+      font-size:13px;
+      color:var(--muted);
+    }
+
+    /* Joke list */
+    .joke-list{
+      margin-top:12px;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+    }
+
+    .joke {
+      display:flex;
+      gap:16px;
+      align-items:flex-start;
+      padding:14px;
+      border-radius:12px;
+      background: linear-gradient(180deg, rgba(255,255,255,1), rgba(250,249,247,1));
+      border: 1px solid rgba(0,0,0,0.04);
+      box-shadow: var(--shadow-2);
+      position:relative;
+    }
+
+    .joke::before{
+      content:"";
+      position:absolute;
+      left:0;
+      top:0;
+      bottom:0;
+      width:6px;
+      border-top-left-radius:12px;
+      border-bottom-left-radius:12px;
+      background: linear-gradient(180deg, var(--accent), var(--accent-2));
+    }
+
+    .joke-content{
+      flex:1;
+    }
+
+    .meta{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      margin-bottom:6px;
+    }
+
+    .meta .who{
+      font-weight:700;
+      font-size:13px;
+      color:var(--text);
+      font-family:"Inter";
+    }
+
+    .meta .time{
+      font-size:12px;
+      color:var(--muted);
+    }
+
+    .joke-text{
+      font-size:15px;
+      color:var(--text);
+      line-height:1.5;
+      white-space:pre-wrap;
+    }
+
+    .joke-actions{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      align-items:flex-end;
+    }
+
+    .icon-btn {
+      background:transparent;
+      border:none;
+      cursor:pointer;
+      padding:6px 8px;
+      font-size:13px;
+      color:var(--muted);
+      border-radius:8px;
+      transition:all 160ms ease;
+    }
+
+    .icon-btn:hover{
+      color:var(--text);
+      background:rgba(0,0,0,0.03);
+      transform:translateY(-2px);
+    }
+
+    .empty {
+      padding:28px;
+      border-radius:10px;
+      background:linear-gradient(180deg, rgba(255,255,255,0.8), rgba(250,249,247,0.8));
+      text-align:center;
+      color:var(--muted);
+      font-size:15px;
+      border:1px dashed rgba(0,0,0,0.04);
+    }
+
+    /* Responsive */
+    @media (max-width:720px){
+      .intro{flex-direction:column;align-items:flex-start}
+      form.joke-form{flex-direction:column}
+      .form-actions{justify-content:flex-start}
+      .actions{display:none}
+    }
+
+  </style>
 </head>
 <body>
-
-    <!-- Optional Banner Image -->
-    <img src="https://i.imgur.com/2xj5y7C.png" alt="LOHS Comedy Club Banner" class="banner">
-
-    <h1>Welcome to the LOHS Comedy Club!</h1>
-    <p>This is the official website for our club. Get ready to laugh, share jokes, and enjoy the fun! Submit your favorite jokes below and see them appear on our Joke Wall.</p>
-
-    <div class="joke-wall">
-        <h2>Joke Wall</h2>
-        <input type="text" id="jokeInput" placeholder="Type your joke here">
-        <button onclick="submitJoke()">Submit a Joke</button>
-
-        <div class="joke-list" id="jokeList">
-            <!-- Submitted jokes will appear here -->
+  <div class="container">
+    <header class="brand">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:46px;height:46px;border-radius:10px;background:linear-gradient(180deg,var(--accent),var(--accent-2));display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-family:'Playfair Display',serif;font-size:20px;box-shadow:var(--shadow-2);">
+          LO
         </div>
-    </div>
+        <div>
+          <h1 style="margin:0;font-size:18px;">LOHS Comedy Club</h1>
+          <p style="margin:2px 0 0 0;color:var(--muted);font-size:13px;">Refined Joke Wall — share a moment of levity</p>
+        </div>
+      </div>
+    </header>
 
-    <footer>
-        LOHS Comedy Club &copy; 2026
-    </footer>
+    <main class="card" role="main" aria-labelledby="page-title">
+      <div class="intro">
+        <div class="title">
+          <h2 id="page-title">Joke Wall — tasteful & timeless</h2>
+          <p class="small">Post a short joke, aphorism, or witty line. The design favors clarity, space, and a classic palette.</p>
+        </div>
 
-    <script>
-        function submitJoke() {
-            const input = document.getElementById('jokeInput');
-            const joke = input.value.trim();
-            if(joke) {
-                const jokeList = document.getElementById('jokeList');
-                const p = document.createElement('p');
-                p.textContent = joke;
-                jokeList.insertBefore(p, jokeList.firstChild); // newest joke on top
-                input.value = ''; // clear input box
-            } else {
-                alert("Please type a joke before submitting!");
-            }
+        <div class="actions" aria-hidden="true">
+          <button class="btn btn--ghost" id="clearAllBtn" title="Clear local jokes">Clear Local</button>
+          <button class="btn btn--primary" id="downloadBtn" title="Download jokes">Download</button>
+        </div>
+      </div>
+
+      <form class="joke-form" id="jokeForm" onsubmit="return false;">
+        <div class="field">
+          <label for="author">Name (optional)</label>
+          <input id="author" type="text" placeholder="Your name (or leave blank for Anonymous)" maxlength="40" />
+        </div>
+
+        <div class="field" style="flex:2 1 40%;">
+          <label for="joke">Your Line</label>
+          <textarea id="joke" placeholder="Write something short and funny…" maxlength="800"></textarea>
+        </div>
+
+        <div class="form-actions" style="align-self:flex-end;">
+          <button type="button" class="btn btn--ghost" id="previewBtn">Preview</button>
+          <button type="submit" class="btn btn--primary" id="submitBtn">Submit</button>
+        </div>
+      </form>
+
+      <div id="jokeListArea">
+        <div id="jokeList" class="joke-list" aria-live="polite"></div>
+      </div>
+
+    </main>
+  </div>
+
+  <script>
+    // Simple, safe local storage-backed joke wall
+    (function(){
+      const LS_KEY = 'lohs_jokes_v1';
+      const jokeListEl = document.getElementById('jokeList');
+      const form = document.getElementById('jokeForm');
+      const jokeInput = document.getElementById('joke');
+      const authorInput = document.getElementById('author');
+      const submitBtn = document.getElementById('submitBtn');
+      const previewBtn = document.getElementById('previewBtn');
+      const clearAllBtn = document.getElementById('clearAllBtn');
+      const downloadBtn = document.getElementById('downloadBtn');
+
+      function loadJokes(){
+        try{
+          const raw = localStorage.getItem(LS_KEY);
+          return raw ? JSON.parse(raw) : [];
+        }catch(e){
+          console.error('Failed to load jokes', e);
+          return [];
         }
-    </script>
+      }
 
+      function saveJokes(list){
+        try{
+          localStorage.setItem(LS_KEY, JSON.stringify(list));
+        }catch(e){
+          console.error('Failed to save jokes', e);
+        }
+      }
+
+      function timeStampNow(){
+        return new Date().toISOString();
+      }
+
+      function formatTime(iso){
+        const d = new Date(iso);
+        return d.toLocaleString(undefined, {month:'short', day:'numeric', hour:'numeric', minute:'2-digit'});
+      }
+
+      function createJokeElement(entry){
+        const wrap = document.createElement('article');
+        wrap.className = 'joke';
+        wrap.setAttribute('data-id', entry.id);
+
+        const content = document.createElement('div');
+        content.className = 'joke-content';
+
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        const who = document.createElement('div');
+        who.className = 'who';
+        who.textContent = entry.author ? entry.author : 'Anonymous';
+        const time = document.createElement('div');
+        time.className = 'time';
+        time.textContent = formatTime(entry.time);
+        meta.appendChild(who);
+        meta.appendChild(time);
+
+        const text = document.createElement('div');
+        text.className = 'joke-text';
+        text.textContent = entry.text;
+
+        content.appendChild(meta);
+        content.appendChild(text);
+
+        const actions = document.createElement('div');
+        actions.className = 'joke-actions';
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'icon-btn';
+        delBtn.title = 'Remove';
+        delBtn.innerHTML = 'Remove';
+        delBtn.onclick = () => {
+          removeJoke(entry.id);
+        };
+
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'icon-btn';
+        copyBtn.title = 'Copy';
+        copyBtn.innerHTML = 'Copy';
+        copyBtn.onclick = () => {
+          navigator.clipboard?.writeText(`${entry.text} — ${entry.author || 'Anonymous'}`).then(()=> {
+            copyBtn.textContent = 'Copied';
+            setTimeout(()=> copyBtn.textContent = 'Copy', 1200);
+          }).catch(()=> {
+            copyBtn.textContent = 'Copy';
+          });
+        };
+
+        actions.appendChild(copyBtn);
+        actions.appendChild(delBtn);
+
+        wrap.appendChild(content);
+        wrap.appendChild(actions);
+        return wrap;
+      }
+
+      function render(){
+        const list = loadJokes();
+        jokeListEl.innerHTML = '';
+        if(!list.length){
+          const empty = document.createElement('div');
+          empty.className = 'empty';
+          empty.textContent = 'No entries yet — be the first to post a tasteful one-liner.';
+          jokeListEl.appendChild(empty);
+          return;
+        }
+        // newest first
+        list.slice().reverse().forEach(entry => {
+          jokeListEl.appendChild(createJokeElement(entry));
+        });
+      }
+
+      function addJoke(author, text){
+        const trimmed = text.trim();
+        if(!trimmed) return false;
+        const list = loadJokes();
+        const entry = { id: 'j'+Date.now(), author: author.trim(), text: trimmed, time: timeStampNow() };
+        list.push(entry);
+        saveJokes(list);
+        render();
+        return true;
+      }
+
+      function removeJoke(id){
+        let list = loadJokes();
+        list = list.filter(e => e.id !== id);
+        saveJokes(list);
+        render();
+      }
+
+      // Wired events
+      submitBtn.addEventListener('click', ()=> {
+        const author = authorInput.value;
+        const text = jokeInput.value;
+        if(!text.trim()){
+          // subtle validation
+          jokeInput.focus();
+          jokeInput.style.outline = '2px solid rgba(176,136,68,0.18)';
+          setTimeout(()=> jokeInput.style.outline = '', 800);
+          return;
+        }
+        const ok = addJoke(author, text);
+        if(ok){
+          jokeInput.value = '';
+          authorInput.value = '';
+          submitBtn.blur();
+        }
+      });
+
+      previewBtn.addEventListener('click', ()=> {
+        const previewText = jokeInput.value.trim();
+        if(!previewText){
+          jokeInput.focus();
+          return;
+        }
+        // show a temporary preview at top
+        const tmp = { id:'tmp', author: authorInput.value || 'You (preview)', text: previewText, time: timeStampNow() };
+        const el = createJokeElement(tmp);
+        el.style.opacity = '0.98';
+        el.style.transform = 'translateY(-4px)';
+        // insert at top
+        if(jokeListEl.firstChild && jokeListEl.firstChild.classList && jokeListEl.firstChild.classList.contains('empty')){
+          jokeListEl.firstChild.remove();
+        }
+        jokeListEl.insertBefore(el, jokeListEl.firstChild);
+        setTimeout(()=> { if(el && el.parentNode) el.remove(); }, 3000);
+      });
+
+      clearAllBtn.addEventListener('click', ()=> {
+        if(confirm('Clear all saved jokes from this browser? This cannot be undone.')) {
+          localStorage.removeItem(LS_KEY);
+          render();
+        }
+      });
+
+      downloadBtn.addEventListener('click', ()=> {
+        const list = loadJokes();
+        if(!list.length){ alert('No jokes to download.'); return; }
+        const blob = new Blob([JSON.stringify(list, null, 2)], {type:'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'lohs_jokes.json';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      });
+
+      // init
+      render();
+
+      // expose small helpers for console debugging (optional)
+      window.LOHJokes = {
+        load: loadJokes,
+        save: saveJokes,
+        add: (author, text) => addJoke(author || '', text || '')
+      };
+    })();
+  </script>
 </body>
 </html>
