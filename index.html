@@ -129,6 +129,22 @@
       box-shadow: 0 0 8px rgba(176,137,75,0.2);
     }
 
+    /* Agreement area */
+    .agreement {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      color:var(--muted);
+      font-size:14px;
+      margin-bottom:4px;
+    }
+    .agreement a {
+      color:var(--text);
+      text-decoration:underline;
+      cursor:pointer;
+      font-weight:600;
+    }
+
     .form-actions{
       display:flex;
       gap:10px;
@@ -157,6 +173,13 @@
       color:#222;
     }
     #previewBtn:hover{opacity:0.9; transform:translateY(-2px);}
+
+    /* Disabled button style */
+    button:disabled{
+      opacity:0.5;
+      cursor:not-allowed;
+      transform:none;
+    }
 
     /* Joke list */
     .joke-list{
@@ -258,6 +281,38 @@
       font-size:15px;
       border:1px dashed rgba(0,0,0,0.04);
     }
+
+    /* Modal styles (subtle, matching palette) */
+    .modal-backdrop{
+      position:fixed;
+      inset:0;
+      background: rgba(12,12,12,0.45);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:9999;
+      opacity:0;
+      pointer-events:none;
+      transition:opacity 160ms ease;
+    }
+    .modal-backdrop.open{
+      opacity:1;
+      pointer-events:auto;
+    }
+    .modal {
+      width: min(820px, 94%);
+      background: var(--bg-inner);
+      border-radius:12px;
+      padding:22px;
+      box-shadow: 0 12px 40px rgba(20,20,20,0.18);
+      max-height:80vh;
+      overflow:auto;
+    }
+    .modal h3 { margin-top:0; font-family:"Playfair Display", serif; }
+    .modal p { color:var(--muted); line-height:1.5; }
+    .modal .modal-actions { display:flex; justify-content:flex-end; gap:10px; margin-top:16px; }
+    .modal .close-btn { background:transparent; border:1px solid rgba(0,0,0,0.06); padding:8px 12px; border-radius:8px; cursor:pointer; }
+    .modal .agree-btn { background: var(--accent); color:#fff; padding:8px 14px; border-radius:8px; border:none; cursor:pointer; }
   </style>
 </head>
 
@@ -278,6 +333,15 @@
         </div>
       </div>
 
+      <!-- Agreement UI: checkbox + link to modal -->
+      <div class="agreement" style="margin-bottom:12px;">
+        <input id="agreeCheckbox" type="checkbox" />
+        <label for="agreeCheckbox" style="color:var(--muted);font-size:14px;">
+          I have read and agree to the
+          <a id="guidelinesBtn">Community Guidelines</a>
+        </label>
+      </div>
+
       <form class="joke-form" id="jokeForm" onsubmit="return false;">
         <div class="field">
           <label for="author">Name (optional)</label>
@@ -290,8 +354,8 @@
         </div>
 
         <div class="form-actions">
-          <button type="button" id="previewBtn">Preview</button>
-          <button type="submit" id="submitBtn">Submit</button>
+          <button type="button" id="previewBtn" disabled>Preview</button>
+          <button type="submit" id="submitBtn" disabled>Submit</button>
         </div>
       </form>
 
@@ -299,6 +363,24 @@
         <div id="jokeList" class="joke-list" aria-live="polite"></div>
       </div>
     </main>
+  </div>
+
+  <!-- Guidelines Modal -->
+  <div id="guidelinesModal" class="modal-backdrop" aria-hidden="true">
+    <div class="modal" role="dialog" aria-labelledby="modalTitle">
+      <h3 id="modalTitle">Community Guidelines</h3>
+      <p>
+        Please do not post offensive content. Submissions containing racist slurs, hate speech, threats, targeted harassment,
+        sexually explicit material involving minors, or otherwise unlawful content will be removed. Repeated or severe violations
+        may result in removal of content, temporary or permanent suspension of posting privileges, and, where legally required
+        (for example credible threats), reporting to the appropriate authorities. By posting, you agree to follow these community standards.
+      </p>
+
+      <div class="modal-actions">
+        <button class="close-btn" id="modalClose">Close</button>
+        <button class="agree-btn" id="modalAgree">I agree</button>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -316,21 +398,72 @@
     const db = firebase.firestore();
     const auth = firebase.auth();
 
-    const adminUID = "YOUR_UID_HERE"; // replace with your Firebase UID
+    // Replace with your admin UID (the UID you got from firebase.auth().currentUser.uid)
+    const adminUID = "YOUR_UID_HERE";
 
-    // Sign in anonymously if not already signed in
-    auth.onAuthStateChanged(user=>{
-      if(!user) auth.signInAnonymously().catch(console.error);
+    // Ensure auth state (anonymous sign in if not signed in)
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        auth.signInAnonymously().catch(console.error);
+      } else {
+        // user available; nothing else required here
+      }
     });
 
+    // UI elements
     const jokeListEl = document.getElementById('jokeList');
     const jokeInput = document.getElementById('joke');
     const authorInput = document.getElementById('author');
     const submitBtn = document.getElementById('submitBtn');
     const previewBtn = document.getElementById('previewBtn');
+    const agreeCheckbox = document.getElementById('agreeCheckbox');
+    const guidelinesBtn = document.getElementById('guidelinesBtn');
+    const guidelinesModal = document.getElementById('guidelinesModal');
+    const modalClose = document.getElementById('modalClose');
+    const modalAgree = document.getElementById('modalAgree');
 
-    function ts(){return new Date();}
-    function fmtTime(d){return d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
+    // Toggle submit/preview enabled state based on checkbox
+    function updateActionButtons() {
+      const ok = agreeCheckbox.checked;
+      submitBtn.disabled = !ok;
+      previewBtn.disabled = !ok;
+    }
+    agreeCheckbox.addEventListener('change', updateActionButtons);
+
+    // Modal open/close
+    guidelinesBtn.addEventListener('click', () => {
+      guidelinesModal.classList.add('open');
+      guidelinesModal.setAttribute('aria-hidden', 'false');
+    });
+    modalClose.addEventListener('click', () => {
+      guidelinesModal.classList.remove('open');
+      guidelinesModal.setAttribute('aria-hidden', 'true');
+    });
+    modalAgree.addEventListener('click', () => {
+      agreeCheckbox.checked = true;
+      updateActionButtons();
+      guidelinesModal.classList.remove('open');
+      guidelinesModal.setAttribute('aria-hidden', 'true');
+    });
+    // close modal when clicking outside modal content
+    guidelinesModal.addEventListener('click', (e) => {
+      if (e.target === guidelinesModal) {
+        guidelinesModal.classList.remove('open');
+        guidelinesModal.setAttribute('aria-hidden', 'true');
+      }
+    });
+
+    // Helpers
+    function fmtTime(d){ return d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }
+
+    // Keep current user UID for quick checks
+    let currentUID = null;
+    auth.onAuthStateChanged(user => {
+      currentUID = user ? user.uid : null;
+      // Update any dynamic UI if needed (delete buttons use currentUID check during render)
+      // Re-render jokes so delete button visibility is correct
+      // (renderJokes uses createJoke which checks currentUID)
+    });
 
     function createJoke(entry){
       const wrap=document.createElement('article'); wrap.className='joke'; wrap.dataset.id=entry.id;
@@ -344,15 +477,22 @@
       const actions=document.createElement('div'); actions.className='joke-actions';
 
       const del=document.createElement('button'); del.className='icon-btn'; del.innerHTML='Remove';
-      // Only show delete if current user is admin
-      auth.onAuthStateChanged(user=>{
-        if(user && user.uid===adminUID) del.style.display='block';
-        else del.style.display='none';
-      });
-      del.onclick=()=>{db.collection('jokes').doc(entry.id).delete();}
+      // Show delete only if currentUID matches adminUID
+      if (currentUID && currentUID === adminUID) {
+        del.style.display = 'inline-flex';
+      } else {
+        del.style.display = 'none';
+      }
+      del.onclick = () => {
+        // attempt delete (Firestore rules will enforce server-side)
+        db.collection('jokes').doc(entry.id).delete().catch(err => {
+          console.error('Delete failed', err);
+          alert('Delete failed: insufficient permissions or network error.');
+        });
+      };
 
       const copy=document.createElement('button'); copy.className='icon-btn'; copy.innerHTML='Copy';
-      copy.onclick=()=>{navigator.clipboard.writeText(`${entry.text} — ${entry.author||'Anonymous'}`).then(()=>{copy.textContent='Copied'; setTimeout(()=>copy.textContent='Copy',1200);});};
+      copy.onclick=()=>{ navigator.clipboard.writeText(`${entry.text} — ${entry.author||'Anonymous'}`).then(()=>{ copy.textContent='Copied'; setTimeout(()=>copy.textContent='Copy',1200); }).catch(()=>{}); };
 
       actions.appendChild(copy); actions.appendChild(del);
       wrap.appendChild(content); wrap.appendChild(actions);
@@ -371,33 +511,46 @@
         }
         snapshot.forEach(doc=>{
           const data = doc.data();
-          const entry = {id:doc.id, author:data.author, text:data.text, time:data.time?data.time.toDate():new Date()};
+          const entry = {id:doc.id, author:data.author, text:data.text, time:data.time ? data.time.toDate() : new Date()};
           jokeListEl.appendChild(createJoke(entry));
         });
+      }, err => {
+        console.error('Snapshot error', err);
       });
     }
 
+    // Submit and preview handlers (require agreement checkbox)
     submitBtn.addEventListener('click',()=>{
-      const text=jokeInput.value.trim();
+      if(!agreeCheckbox.checked) { alert('Please confirm you have read the Community Guidelines.'); return; }
+      const text = jokeInput.value.trim();
       if(!text) return;
       db.collection("jokes").add({
         author: authorInput.value.trim() || "Anonymous",
         text: text,
         time: firebase.firestore.FieldValue.serverTimestamp()
+      }).catch(err => {
+        console.error('Add failed', err);
+        alert('Failed to submit. Please try again.');
       });
       jokeInput.value=''; authorInput.value='';
     });
 
     previewBtn.addEventListener('click',()=>{
-      const text=jokeInput.value.trim();
+      if(!agreeCheckbox.checked) { alert('Please confirm you have read the Community Guidelines.'); return; }
+      const text = jokeInput.value.trim();
       if(!text) return;
       const entry={id:'tmp',author:authorInput.value||'You (preview)',text:text,time:new Date()};
       const el=createJoke(entry);
       jokeListEl.insertBefore(el,jokeListEl.firstChild);
-      setTimeout(()=>{if(el.parentNode) el.remove();},3000);
+      setTimeout(()=>{ if(el.parentNode) el.remove(); },3000);
     });
 
+    // Kick off render
     renderJokes();
+    updateActionButtons(); // keep buttons disabled until user checks
+
+    // Optional: expose currentUID for debugging (remove in production)
+    window.__LOHS = { getCurrentUID: () => currentUID };
   </script>
 </body>
 </html>
