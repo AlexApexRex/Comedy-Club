@@ -282,6 +282,34 @@
       border:1px dashed rgba(0,0,0,0.04);
     }
 
+    /* Rating stars */
+    .rating {
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin-top:10px;
+      font-size:14px;
+      color:var(--muted);
+    }
+    .stars {
+      display:inline-flex;
+      gap:6px;
+      align-items:center;
+    }
+    .star-btn {
+      background:transparent;
+      border: none;
+      cursor: pointer;
+      font-size:18px;
+      line-height:1;
+      padding:4px 6px;
+      border-radius:6px;
+      transition: all 120ms ease;
+      color: var(--muted);
+    }
+    .star-btn:hover { transform: translateY(-2px); color: var(--text); background: rgba(0,0,0,0.03); }
+    .star-on { color: var(--accent); font-weight:700; }
+
     /* Modal styles (subtle, matching palette) */
     .modal-backdrop{
       position:fixed;
@@ -455,16 +483,17 @@
 
     // Helpers
     function fmtTime(d){ return d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }
+    function fmtAvg(avg){ return (Math.round((avg||0) * 10) / 10).toFixed(1); }
 
     // Keep current user UID for quick checks
     let currentUID = null;
     auth.onAuthStateChanged(user => {
       currentUID = user ? user.uid : null;
-      // Update any dynamic UI if needed (delete buttons use currentUID check during render)
-      // Re-render jokes so delete button visibility is correct
-      // (renderJokes uses createJoke which checks currentUID)
+      // Re-render is not necessary because snapshot listener handles updates,
+      // but delete button visibility depends on currentUID; re-run render by re-subscribing is avoided.
     });
 
+    // Create a single joke DOM node
     function createJoke(entry){
       const wrap=document.createElement('article'); wrap.className='joke'; wrap.dataset.id=entry.id;
       const content=document.createElement('div'); content.className='joke-content';
@@ -474,6 +503,48 @@
       meta.appendChild(who); meta.appendChild(time);
       const text=document.createElement('div'); text.className='joke-text'; text.textContent=entry.text;
       content.appendChild(meta); content.appendChild(text);
+
+      // Rating area
+      const ratingWrap = document.createElement('div');
+      ratingWrap.className = 'rating';
+
+      const starsDiv = document.createElement('div');
+      starsDiv.className = 'stars';
+      // create 5 star buttons
+      for (let v = 1; v <= 5; v++) {
+        const sb = document.createElement('button');
+        sb.className = 'star-btn';
+        sb.setAttribute('aria-label', `${v} star${v>1?'s':''}`);
+        sb.innerHTML = '★';
+        sb.dataset.value = v;
+        // click handler will attempt to rate (needs currentUID)
+        sb.addEventListener('click', (e) => {
+          e.preventDefault();
+          // sign in anonymously if not signed in yet
+          if (!currentUID) {
+            auth.signInAnonymously().then(() => {
+              // currentUID will be available via auth.onAuthStateChanged
+              // small delay; in practice currentUID is set shortly after
+              setTimeout(()=> rateJoke(entry.id, v), 300);
+            }).catch(err=>{ console.error('Auth failed', err); alert('Unable to authenticate for rating.'); });
+            return;
+          }
+          rateJoke(entry.id, v);
+        });
+        starsDiv.appendChild(sb);
+      }
+
+      const avgSpan = document.createElement('div');
+      avgSpan.className = 'avg';
+      avgSpan.style.fontSize = '13px';
+      avgSpan.style.color = 'var(--muted)';
+      avgSpan.textContent = `${fmtAvg(entry.ratingAverage||0)} (${(entry.ratingCount || 0)} ratings)`;
+
+      ratingWrap.appendChild(starsDiv);
+      ratingWrap.appendChild(avgSpan);
+
+      content.appendChild(ratingWrap);
+
       const actions=document.createElement('div'); actions.className='joke-actions';
 
       const del=document.createElement('button'); del.className='icon-btn'; del.innerHTML='Remove';
@@ -496,26 +567,137 @@
 
       actions.appendChild(copy); actions.appendChild(del);
       wrap.appendChild(content); wrap.appendChild(actions);
+
+      // After building node, set star highlights based on average and user's prior rating (if any)
+      updateStarsUI(entry.id, starsDiv, avgSpan);
+
       return wrap;
     }
 
-    function renderJokes(){
-      db.collection("jokes").orderBy("time","desc").onSnapshot(snapshot=>{
-        jokeListEl.innerHTML='';
-        if(snapshot.empty){
-          const empty = document.createElement('div');
-          empty.className='empty';
-          empty.textContent='No entries yet — be the first to post a tasteful one-liner.';
-          jokeListEl.appendChild(empty);
-          return;
-        }
-        snapshot.forEach(doc=>{
-          const data = doc.data();
-          const entry = {id:doc.id, author:data.author, text:data.text, time:data.time ? data.time.toDate() : new Date()};
-          jokeListEl.appendChild(createJoke(entry));
+    // Update star buttons UI: highlight up to user's rating if exists; otherwise highlight by average (rounded)
+    function updateStarsUI(jokeId, starsDiv, avgSpan){
+      // First set average display quickly (avgSpan may be passed)
+      // Now fetch user's rating for this joke (if signed in)
+      const setHighlight = (userRating, avg) => {
+        const avgRounded = Math.round((avg || 0));
+        Array.from(starsDiv.children).forEach(btn => {
+          const v = Number(btn.dataset.value);
+          btn.classList.remove('star-on');
+          // if userRating exists, highlight to userRating else highlight to avgRounded
+          if (userRating != null) {
+            if (v <= userRating) btn.classList.add('star-on');
+          } else {
+            if (v <= avgRounded) btn.classList.add('star-on');
+          }
         });
-      }, err => {
-        console.error('Snapshot error', err);
+      };
+
+      // fetch joke doc to get latest average (in case not passed)
+      db.collection('jokes').doc(jokeId).get().then(jd => {
+        const jdData = jd.exists ? jd.data() : {};
+        const avg = jdData.ratingAverage || 0;
+        const count = jdData.ratingCount || 0;
+        if (avgSpan) avgSpan.textContent = `${fmtAvg(avg)} (${count} ratings)`;
+      }).catch(()=>{});
+
+      if (!currentUID) {
+        // no user -> highlight by average
+        db.collection('jokes').doc(jokeId).get().then(jd => {
+          const jdData = jd.exists ? jd.data() : {};
+          setHighlight(null, jdData.ratingAverage || 0);
+        }).catch(()=> setHighlight(null, 0));
+        return;
+      }
+      // fetch user's rating doc
+      db.collection('jokes').doc(jokeId).collection('ratings').doc(currentUID).get().then(rdoc => {
+        if (rdoc.exists) {
+          const ur = rdoc.data().rating;
+          setHighlight(ur, rdoc.exists ? undefined : 0);
+        } else {
+          // no user rating: use average
+          db.collection('jokes').doc(jokeId).get().then(jd => {
+            const jdData = jd.exists ? jd.data() : {};
+            setHighlight(null, jdData.ratingAverage || 0);
+          }).catch(()=> setHighlight(null, 0));
+        }
+      }).catch(()=> {
+        // fallback
+        db.collection('jokes').doc(jokeId).get().then(jd => {
+          const jdData = jd.exists ? jd.data() : {};
+          setHighlight(null, jdData.ratingAverage || 0);
+        }).catch(()=> setHighlight(null, 0));
+      });
+    }
+
+    // Render jokes — order by ratingAverage desc, then time desc
+    function renderJokes(){
+      // Ensure all jokes have ratingAverage field (when added we set it to 0)
+      db.collection("jokes")
+        .orderBy("ratingAverage","desc")
+        .orderBy("time","desc")
+        .onSnapshot(snapshot=>{
+          jokeListEl.innerHTML='';
+          if(snapshot.empty){
+            const empty = document.createElement('div');
+            empty.className='empty';
+            empty.textContent='No entries yet — be the first to post a tasteful one-liner.';
+            jokeListEl.appendChild(empty);
+            return;
+          }
+          snapshot.forEach(doc=>{
+            const data = doc.data();
+            const entry = {
+              id: doc.id,
+              author: data.author,
+              text: data.text,
+              time: data.time ? data.time.toDate() : new Date(),
+              ratingAverage: data.ratingAverage || 0,
+              ratingCount: data.ratingCount || 0
+            };
+            jokeListEl.appendChild(createJoke(entry));
+          });
+        }, err => {
+          console.error('Snapshot error', err);
+        });
+    }
+
+    // Rate a joke: transactionally update joke aggregates and user rating doc
+    function rateJoke(jokeId, newRating){
+      if (!currentUID) {
+        alert('Signing you in anonymously to save your rating...');
+        auth.signInAnonymously().catch(err => { console.error(err); alert('Could not sign in for rating.'); });
+        return;
+      }
+      const jokeRef = db.collection('jokes').doc(jokeId);
+      const userRatingRef = jokeRef.collection('ratings').doc(currentUID);
+
+      db.runTransaction(async tx => {
+        const [jokeSnap, userSnap] = await Promise.all([tx.get(jokeRef), tx.get(userRatingRef)]);
+        if (!jokeSnap.exists) {
+          throw "Joke missing";
+        }
+        const jd = jokeSnap.data();
+        let ratingSum = jd.ratingSum || 0;
+        let ratingCount = jd.ratingCount || 0;
+        const prev = userSnap.exists ? (userSnap.data().rating || 0) : null;
+
+        if (prev === null) {
+          ratingSum = ratingSum + newRating;
+          ratingCount = ratingCount + 1;
+        } else {
+          ratingSum = ratingSum - prev + newRating;
+        }
+        const ratingAverage = ratingCount ? (ratingSum / ratingCount) : 0;
+
+        // set / update user's rating doc
+        tx.set(userRatingRef, { rating: newRating, uid: currentUID }, { merge: true });
+        // update aggregate fields on joke document
+        tx.update(jokeRef, { ratingSum: ratingSum, ratingCount: ratingCount, ratingAverage: ratingAverage });
+      }).then(()=> {
+        // success; the snapshot listener will update UI
+      }).catch(err => {
+        console.error('Rating transaction failed', err);
+        alert('Failed to save rating. Please try again.');
       });
     }
 
@@ -527,7 +709,10 @@
       db.collection("jokes").add({
         author: authorInput.value.trim() || "Anonymous",
         text: text,
-        time: firebase.firestore.FieldValue.serverTimestamp()
+        time: firebase.firestore.FieldValue.serverTimestamp(),
+        ratingSum: 0,
+        ratingCount: 0,
+        ratingAverage: 0
       }).catch(err => {
         console.error('Add failed', err);
         alert('Failed to submit. Please try again.');
@@ -539,7 +724,7 @@
       if(!agreeCheckbox.checked) { alert('Please confirm you have read the Community Guidelines.'); return; }
       const text = jokeInput.value.trim();
       if(!text) return;
-      const entry={id:'tmp',author:authorInput.value||'You (preview)',text:text,time:new Date()};
+      const entry={id:'tmp',author:authorInput.value||'You (preview)',text:text,time:new Date(), ratingAverage:0, ratingCount:0};
       const el=createJoke(entry);
       jokeListEl.insertBefore(el,jokeListEl.firstChild);
       setTimeout(()=>{ if(el.parentNode) el.remove(); },3000);
