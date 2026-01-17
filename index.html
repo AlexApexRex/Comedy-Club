@@ -3,64 +3,120 @@
 <head>
     <meta charset="UTF-8">
     <title>LOHS Comedy Club</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
+        /* General Body Styles */
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(to bottom, #fff3e0, #ffecd1);
             color: #333;
-            max-width: 800px;
+            max-width: 900px;
             margin: 40px auto;
             padding: 20px;
         }
+
+        /* Header */
         h1 {
             color: #ff6600;
+            text-align: center;
+            text-shadow: 1px 1px 3px #aaa;
         }
+
+        p {
+            line-height: 1.6;
+        }
+
+        /* Banner Image */
+        .banner {
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        /* Joke Wall */
         .joke-wall {
-            border: 2px dashed #ccc;
+            border-radius: 10px;
+            background-color: #fff8f0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             padding: 20px;
             margin-top: 30px;
         }
+
+        .joke-wall h2 {
+            color: #ff6600;
+            text-align: center;
+        }
+
+        /* Input and Button */
+        input {
+            padding: 10px;
+            width: 70%;
+            margin-right: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+        }
+
         button {
             background-color: #ff6600;
             color: white;
             border: none;
             padding: 10px 20px;
             cursor: pointer;
-            margin-top: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 16px;
         }
+
         button:hover {
             background-color: #e65c00;
         }
-        input {
-            padding: 5px;
-            width: 70%;
-            margin-right: 10px;
-        }
+
+        /* Joke List */
         .joke-list {
             margin-top: 20px;
         }
+
         .joke-list p {
-            background-color: #fff3e0;
+            background-color: #fff0d4;
+            border-left: 5px solid #ff6600;
             padding: 10px;
             border-radius: 5px;
             margin-bottom: 10px;
+            font-style: italic;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #777;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
+
+    <!-- Optional Banner Image -->
+    <img src="https://i.imgur.com/2xj5y7C.png" alt="LOHS Comedy Club Banner" class="banner">
+
     <h1>Welcome to the LOHS Comedy Club!</h1>
-    <p>This is the official website for our club. Get ready to laugh!</p>
+    <p>This is the official website for our club. Get ready to laugh, share jokes, and enjoy the fun! Submit your favorite jokes below and see them appear on our Joke Wall.</p>
 
     <div class="joke-wall">
         <h2>Joke Wall</h2>
-        <p>Submit your funniest joke below and see it appear here!</p>
         <input type="text" id="jokeInput" placeholder="Type your joke here">
         <button onclick="submitJoke()">Submit a Joke</button>
 
         <div class="joke-list" id="jokeList">
-            <!-- New jokes will appear here -->
+            <!-- Submitted jokes will appear here -->
         </div>
     </div>
+
+    <footer>
+        LOHS Comedy Club &copy; 2026
+    </footer>
 
     <script>
         function submitJoke() {
@@ -70,12 +126,13 @@
                 const jokeList = document.getElementById('jokeList');
                 const p = document.createElement('p');
                 p.textContent = joke;
-                jokeList.appendChild(p);
-                input.value = ''; // Clear the input box
+                jokeList.insertBefore(p, jokeList.firstChild); // newest joke on top
+                input.value = ''; // clear input box
             } else {
                 alert("Please type a joke before submitting!");
             }
         }
     </script>
+
 </body>
 </html>
