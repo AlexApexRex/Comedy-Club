@@ -245,63 +245,66 @@
       border:1px dashed rgba(0,0,0,0.04);
     }
 
-    /* Modal Styles */
-    .modal-backdrop{
-      display:none;
-      position:fixed;
-      top:0; left:0; width:100%; height:100%;
-      background:rgba(0,0,0,0.5);
-      justify-content:center;
+    /* Modal styles */
+    .modal-overlay{
+      position: fixed;
+      top:0; left:0;
+      width:100%; height:100%;
+      background: rgba(0,0,0,0.4);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .modal-content{
+      background: var(--bg-inner);
+      padding: 24px 32px;
+      border-radius: 12px;
+      box-shadow: var(--shadow-1);
+      max-width: 500px;
+      width: 90%;
+      pointer-events: auto;
+      position: relative;
+      z-index: 1001;
+    }
+
+    .modal-content h3{
+      margin-top:0;
+      font-family: "Playfair Display", serif;
+      font-size: 20px;
+    }
+
+    .modal-content p{
+      font-size: 14px;
+      color: var(--muted);
+    }
+
+    .modal-content label{
+      display:flex;
       align-items:center;
-      z-index:1000;
+      gap:8px;
+      cursor: pointer;
+      margin-top: 16px;
+      font-size: 14px;
     }
 
-    .modal{
-      background:var(--bg-inner);
-      padding:24px;
-      border-radius:var(--radius);
-      max-width:500px;
-      width:90%;
-      box-shadow:var(--shadow-1);
-      font-size:14px;
-      color:var(--text);
-      display:flex;
-      flex-direction:column;
-      gap:12px;
+    .modal-content input[type="checkbox"]{
+      width: 16px;
+      height: 16px;
     }
 
-    .modal h3{
-      margin:0 0 8px 0;
-      font-family:"Playfair Display", serif;
+    .modal-content button{
+      margin-top: 16px;
+      background: var(--accent);
+      color: white;
       font-weight:600;
-      font-size:18px;
-    }
-
-    .modal p{
-      margin:0;
-      line-height:1.5;
-    }
-
-    .modal-actions{
-      display:flex;
-      justify-content:flex-end;
-      gap:12px;
-      margin-top:12px;
-    }
-
-    .modal button{
-      cursor:pointer;
-    }
-
-    .link-underlined{
-      color:var(--accent);
-      text-decoration:underline;
-      cursor:pointer;
+      border-radius:8px;
+      padding:10px 16px;
     }
 
   </style>
 </head>
-
 <body>
   <div class="container">
     <header class="brand">
@@ -315,9 +318,7 @@
       <div class="intro">
         <div class="title">
           <h2 id="page-title">Joke Wall — tasteful and timeless</h2>
-          <p class="small">Post a short joke, aphorism, or witty line. Read our 
-            <span id="guidelinesLink" class="link-underlined">Community Guidelines</span> before posting.
-          </p>
+          <p class="small">Post a short joke, aphorism, or witty line. The design favors clarity, space, and a classic palette.</p>
         </div>
       </div>
 
@@ -330,10 +331,6 @@
         <div class="field">
           <label for="joke">Your Line</label>
           <textarea id="joke" placeholder="Write something short and funny…" maxlength="800" disabled></textarea>
-        </div>
-
-        <div class="field">
-          <label><input type="checkbox" id="agreeCheck" disabled /> I have read and agree to the Community Guidelines</label>
         </div>
 
         <div class="form-actions">
@@ -349,19 +346,20 @@
   </div>
 
   <!-- Modal -->
-  <div class="modal-backdrop" id="modalBackdrop">
-    <div class="modal">
-      <h3>Community Guidelines — Please Read</h3>
-      <p>EN: Please do not post offensive material. Submissions that contain racist slurs, hate speech, violent threats, intimidation, targeted harassment, sexually explicit material involving minors, or otherwise unlawful content will be removed. Repeated or severe violations may result in removal from the site, temporary or permanent suspension of your posting privileges, and, where required by law (for example credible threats), reporting to the appropriate authorities. By posting you agree to follow these community standards.</p>
-      <div class="modal-actions">
-        <button id="closeModalBtn">Close</button>
-        <button id="agreeModalBtn">I Agree</button>
-      </div>
+  <div id="guidelinesModal" class="modal-overlay">
+    <div class="modal-content">
+      <h3>Community Guidelines</h3>
+      <p>Please read the rules carefully. Submissions containing offensive content will be removed, and repeated violations may result in account suspension or reporting.</p>
+      <label>
+        <input type="checkbox" id="agreeCheckbox">
+        I have read and agree to the Community Guidelines
+      </label>
+      <button id="agreeBtn">Continue</button>
     </div>
   </div>
 
   <script>
-    // Initialize Firebase
+    // Firebase setup
     const firebaseConfig = {
       apiKey: "AIzaSyBWNQ1vM2Ki4ReBCOrrCD8fC1iVhwlsX8",
       authDomain: "comedy-club-alpha.firebaseapp.com",
@@ -379,37 +377,29 @@
     const authorInput = document.getElementById('author');
     const submitBtn = document.getElementById('submitBtn');
     const previewBtn = document.getElementById('previewBtn');
-    const agreeCheck = document.getElementById('agreeCheck');
 
-    const guidelinesLink = document.getElementById('guidelinesLink');
-    const modalBackdrop = document.getElementById('modalBackdrop');
-    const closeModalBtn = document.getElementById('closeModalBtn');
-    const agreeModalBtn = document.getElementById('agreeModalBtn');
+    // Modal and checkbox
+    const modal = document.getElementById('guidelinesModal');
+    const agreeCheckbox = document.getElementById('agreeCheckbox');
+    const agreeBtn = document.getElementById('agreeBtn');
 
-    // Modal functionality
-    guidelinesLink.onclick = () => {
-      modalBackdrop.style.display = 'flex';
-    };
-
-    closeModalBtn.onclick = () => {
-      modalBackdrop.style.display = 'none';
-    };
-
-    agreeModalBtn.onclick = () => {
-      agreeCheck.checked = true;
+    // Disable form until user agrees
+    function enableForm() {
       jokeInput.disabled = false;
-      previewBtn.disabled = false;
       submitBtn.disabled = false;
-      modalBackdrop.style.display = 'none';
-    };
+      previewBtn.disabled = false;
+    }
 
-    agreeCheck.onchange = () => {
-      const enabled = agreeCheck.checked;
-      jokeInput.disabled = !enabled;
-      previewBtn.disabled = !enabled;
-      submitBtn.disabled = !enabled;
-    };
+    agreeBtn.addEventListener('click', () => {
+      if(agreeCheckbox.checked){
+        modal.style.display = 'none';
+        enableForm();
+      } else {
+        alert("You must agree to the Community Guidelines to submit jokes.");
+      }
+    });
 
+    // Timestamp helpers
     function ts(){return new Date();}
     function fmtTime(d){return d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
     function createJoke(entry){
@@ -423,7 +413,7 @@
       content.appendChild(meta); content.appendChild(text);
       const actions=document.createElement('div'); actions.className='joke-actions';
       const del=document.createElement('button'); del.className='icon-btn'; del.innerHTML='Remove';
-      del.onclick=()=>{db.collection('jokes').doc(entry.id).delete();}
+      del.onclick=()=>{db.collection('jokes').doc(entry.id).delete();};
       const copy=document.createElement('button'); copy.className='icon-btn'; copy.innerHTML='Copy';
       copy.onclick=()=>{navigator.clipboard.writeText(`${entry.text} — ${entry.author||'Anonymous'}`).then(()=>{copy.textContent='Copied'; setTimeout(()=>copy.textContent='Copy',1200);});};
       actions.appendChild(copy); actions.appendChild(del);
