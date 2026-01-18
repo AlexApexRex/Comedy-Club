@@ -1,158 +1,5 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>LOHS Comedy Club — Refined Joke Wall</title>
-
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:wght@500;700&display=swap" rel="stylesheet">
-
-<!-- Firebase -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-
-<style>
-  :root{
-    --bg-outer: #e8e8e8;
-    --bg-inner: #ffffff;
-    --muted: #6b6b6b;
-    --text: #212121;
-    --accent: #b0894b;
-    --accent-2: #d6c4a1;
-    --radius: 12px;
-    --shadow-1: 0 6px 20px rgba(20,20,20,0.06);
-    --shadow-2: 0 2px 6px rgba(20,20,20,0.06);
-  }
-  html,body{height:100%;margin:0;padding:0;}
-  body{
-    background:linear-gradient(180deg,var(--bg-outer) 0%, #f7f7f7 100%);
-    color:var(--text);
-    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial;
-    display:flex;justify-content:center;padding:48px 20px;
-  }
-  .container{width:100%;max-width:1024px;}
-  header{display:flex;align-items:center;gap:18px;margin-bottom:28px;}
-  .brand h1{margin:0;font-family:"Playfair Display",serif;font-size:28px;color:var(--text);font-weight:600;}
-  .brand p{margin:0;color:var(--muted);font-size:14px;}
-
-  .card{
-    background:var(--bg-inner);
-    border-radius:var(--radius);
-    box-shadow:var(--shadow-1);
-    padding:36px;
-  }
-
-  .intro h2{margin:0;font-family:"Playfair Display",serif;font-size:22px;font-weight:600;}
-  .intro p{margin:6px 0 0 0;color:var(--muted);font-size:14px;}
-
-  form.joke-form{display:flex;flex-direction:column;gap:12px;margin-top:18px;margin-bottom:18px;}
-  .field{display:flex;flex-direction:column;gap:8px;width:100%;}
-  input[type="text"],textarea{
-    width:100%;padding:14px 16px;border-radius:10px;border:1px solid rgba(0,0,0,0.06);
-    background:linear-gradient(180deg,rgba(255,255,255,0.95),rgba(248,247,246,0.95));
-    font-size:15px;color:var(--text);resize:vertical;min-height:50px;box-shadow:var(--shadow-2);
-  }
-  input[type="text"]:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 8px rgba(176,137,75,0.2);}
-
-  .agreement{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px;margin-bottom:6px;}
-  .agreement a{color:var(--text);text-decoration:underline;}
-
-  .form-actions{display:flex;gap:10px;align-items:center;justify-content:flex-end;}
-  button{font-family:"Inter",sans-serif;font-weight:600;font-size:14px;padding:10px 16px;border-radius:8px;border:none;cursor:pointer;transition:all 160ms ease;}
-  #submitBtn{background:var(--accent);color:#fff;}
-  #previewBtn{background:var(--accent-2);color:#222;}
-  button:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
-
-  .filter-row{display:flex;align-items:center;gap:12px;margin:8px 0 18px 0;font-size:14px;color:var(--muted);}
-
-  .joke-list{margin-top:12px;display:flex;flex-direction:column;gap:12px;}
-  .joke{
-    display:flex;flex-direction:column;gap:10px;padding:18px;border-radius:12px;
-    background:linear-gradient(180deg,var(--bg-inner),#fdfcfb);
-    border:1px solid rgba(0,0,0,0.04);box-shadow:var(--shadow-2);
-  }
-  .joke::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;border-top-left-radius:12px;border-bottom-left-radius:12px;background:linear-gradient(180deg,var(--accent),var(--accent-2));}
-  .joke-content{display:block;}
-  .meta{display:flex;gap:10px;align-items:center;color:var(--muted);font-size:13px;}
-  .meta .who{font-weight:700;color:var(--text);}
-  .joke-text{font-size:15px;color:var(--text);line-height:1.5;white-space:pre-wrap;}
-
-  /* Stars area: stars on left, avg text on right */
-  .rating-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:6px;}
-  .stars{display:flex;gap:6px;align-items:center;}
-  .star-btn{
-    background:transparent;border:none;cursor:pointer;font-size:20px;padding:6px;border-radius:6px;color:var(--muted);transition:all 120ms ease;
-  }
-  .star-btn:hover{transform:translateY(-2px);background:rgba(0,0,0,0.03);color:var(--text);}
-  .star-on{color:var(--accent);}
-
-  .avg-text{font-size:13px;color:var(--muted);white-space:nowrap;}
-
-  .joke-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:6px;}
-  .icon-btn{background:transparent;border:none;cursor:pointer;padding:6px 8px;font-size:13px;color:var(--muted);border-radius:8px;}
-  .icon-btn:hover{background:rgba(0,0,0,0.03);color:var(--text);transform:translateY(-2px);}
-  .empty{padding:28px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.8),rgba(250,249,247,0.8));text-align:center;color:var(--muted);font-size:15px;border:1px dashed rgba(0,0,0,0.04);}
-
-  /* small helper */
-  .notice{font-size:13px;color:var(--muted);margin:8px 0;}
-</style>
-</head>
-<body>
-  <div class="container">
-    <header class="brand">
-      <div>
-        <h1>LOHS Comedy Club</h1>
-        <p class="muted">Refined Joke Wall — share a moment of levity</p>
-      </div>
-    </header>
-
-    <main class="card" role="main" aria-labelledby="page-title">
-      <div class="intro">
-        <h2 id="page-title">Joke Wall — tasteful and timeless</h2>
-        <p class="notice">Post a short joke, aphorism, or witty line.</p>
-      </div>
-
-      <div class="filter-row">
-        <label for="sortSelect">Sort by:</label>
-        <select id="sortSelect" aria-label="Sort jokes">
-          <option value="rating">Best rating</option>
-          <option value="time">Newest</option>
-        </select>
-        <div style="flex:1"></div>
-        <div class="notice">Inline rules: be respectful. (Full rules in admin panel)</div>
-      </div>
-
-      <div class="agreement">
-        <input id="agreeCheckbox" type="checkbox" />
-        <label for="agreeCheckbox">I have read and agree to the Community Guidelines</label>
-      </div>
-
-      <form class="joke-form" id="jokeForm" onsubmit="return false;">
-        <div class="field">
-          <label for="author">Name (optional)</label>
-          <input id="author" type="text" placeholder="Your name (or leave blank for Anonymous)" maxlength="40" />
-        </div>
-
-        <div class="field">
-          <label for="joke">Your Line</label>
-          <textarea id="joke" placeholder="Write something short and funny…" maxlength="800"></textarea>
-        </div>
-
-        <div class="form-actions">
-          <button type="button" id="previewBtn" disabled>Preview</button>
-          <button type="submit" id="submitBtn" disabled>Submit</button>
-        </div>
-      </form>
-
-      <div id="jokeListArea">
-        <div id="jokeList" class="joke-list" aria-live="polite"></div>
-      </div>
-    </main>
-  </div>
-
 <script>
-  // ---------------- FIREBASE CONFIG (use your project values) ----------------
+  // ---------------- FIREBASE CONFIG ----------------
   const firebaseConfig = {
     apiKey: "AIzaSyBWNQ1vM2Ki4ReBCOrrCD8XfC1iVhwlsX8",
     authDomain: "comedy-club-alpha.firebaseapp.com",
@@ -167,7 +14,6 @@
   const db = firebase.firestore();
   const auth = firebase.auth();
 
-  // Replace with your admin UID (find in Firebase Console -> Authentication -> Users)
   const adminUID = "viFrocQunxR1y0Pma5DHihAVeWF2";
 
   // UI refs
@@ -181,38 +27,11 @@
 
   let currentUID = null;
   let unsubscribeCurrent = null;
-  let migrationTriggered = false;
 
-  // Helpers
+  // ---------------- HELPERS ----------------
   function fmtTime(d){ return d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }
   function fmtAvg(avg){ return (Math.round((avg||0) * 10) / 10).toFixed(1); }
 
-  // sign in anonymously (single robust listener)
-  auth.onAuthStateChanged(async (user) => {
-    if (!user) {
-      try {
-        await auth.signInAnonymously();
-      } catch (e) {
-        console.error('Anonymous auth failed', e);
-        // show a small notice if needed
-      }
-    } else {
-      currentUID = user.uid;
-      updateActionButtons();
-      // refresh star highlights for visible jokes
-      document.querySelectorAll('.joke').forEach(j => {
-        const id = j.dataset.id;
-        const starsDiv = j.querySelector('.stars');
-        const avgSpan = j.querySelector('.avg-text');
-        if (id && starsDiv && avgSpan) updateStarsUI(id, starsDiv, avgSpan);
-        // show/hide delete button
-        const del = j.querySelector('.delete-btn');
-        if (del) del.style.display = (currentUID === adminUID) ? 'inline-flex' : 'none';
-      });
-    }
-  });
-
-  // Enable/disable submit & preview only when both auth ready and checkbox checked
   function updateActionButtons(){
     const ready = agreeCheckbox.checked && currentUID !== null;
     submitBtn.disabled = !ready;
@@ -220,7 +39,26 @@
   }
   agreeCheckbox.addEventListener('change', updateActionButtons);
 
-  // Create DOM for a single joke
+  // ---------------- ANONYMOUS AUTH ----------------
+  auth.onAuthStateChanged(user => {
+    if (!user) {
+      auth.signInAnonymously().catch(err => console.error('Anonymous auth failed', err));
+    } else {
+      currentUID = user.uid;
+      updateActionButtons();
+      // refresh stars & admin delete buttons
+      document.querySelectorAll('.joke').forEach(j => {
+        const id = j.dataset.id;
+        const starsDiv = j.querySelector('.stars');
+        const avgSpan = j.querySelector('.avg-text');
+        if (id && starsDiv && avgSpan) updateStarsUI(id, starsDiv, avgSpan);
+        const del = j.querySelector('.delete-btn');
+        if (del) del.style.display = (currentUID === adminUID) ? 'inline-flex' : 'none';
+      });
+    }
+  });
+
+  // ---------------- CREATE JOKE DOM ----------------
   function createJokeNode(entry){
     const wrap = document.createElement('article');
     wrap.className = 'joke';
@@ -236,237 +74,192 @@
     meta.appendChild(who); meta.appendChild(when);
 
     const text = document.createElement('div'); text.className='joke-text'; text.textContent = entry.text;
+    content.appendChild(meta); content.appendChild(text);
 
-    content.appendChild(meta);
-    content.appendChild(text);
-
-    // Rating row (stars left, avg text right)
+    // Rating row
     const ratingRow = document.createElement('div'); ratingRow.className = 'rating-row';
     const starsDiv = document.createElement('div'); starsDiv.className='stars';
-    // 5 stars
     for(let v=1; v<=5; v++){
       const sb = document.createElement('button');
       sb.className = 'star-btn';
       sb.innerText = '★';
       sb.dataset.value = v;
       sb.title = `${v} star${v>1?'s':''}`;
-      sb.addEventListener('click', (e) => {
-        e.preventDefault();
-        // ensure auth
-        if (!currentUID) {
-          auth.signInAnonymously().catch(err => { console.error('Auth failed', err); alert('Unable to authenticate for rating.'); });
-          // try again a moment later
-          setTimeout(()=> { if (currentUID) rateJoke(entry.id, v); }, 500);
-          return;
-        }
-        rateJoke(entry.id, v);
-      });
+      sb.addEventListener('click', starClickHandler);
       starsDiv.appendChild(sb);
     }
 
     const avgSpan = document.createElement('div'); avgSpan.className='avg-text';
     avgSpan.textContent = `Rating: ${fmtAvg(entry.ratingAverage||0)} / 5 (${entry.ratingCount||0} votes)`;
-
-    ratingRow.appendChild(starsDiv);
-    ratingRow.appendChild(avgSpan);
-
+    ratingRow.appendChild(starsDiv); ratingRow.appendChild(avgSpan);
     content.appendChild(ratingRow);
 
-    // actions
+    // Actions
     const actions = document.createElement('div'); actions.className='joke-actions';
     const copyBtn = document.createElement('button'); copyBtn.className='icon-btn'; copyBtn.textContent='Copy';
-    copyBtn.onclick = ()=> { navigator.clipboard.writeText(`${entry.text} — ${entry.author||'Anonymous'}`).catch(()=>{}); };
-
+    copyBtn.onclick = ()=> navigator.clipboard.writeText(`${entry.text} — ${entry.author||'Anonymous'}`).catch(()=>{});
     const delBtn = document.createElement('button'); delBtn.className='icon-btn delete-btn'; delBtn.textContent='Remove';
     delBtn.style.display = (currentUID === adminUID) ? 'inline-flex' : 'none';
     delBtn.onclick = ()=> {
       if (!confirm('Remove this joke?')) return;
       db.collection('jokes').doc(entry.id).delete().catch(err=>{ console.error('Delete failed', err); alert('Delete failed'); });
     };
+    actions.appendChild(copyBtn); actions.appendChild(delBtn);
 
-    actions.appendChild(copyBtn);
-    actions.appendChild(delBtn);
+    wrap.appendChild(content); wrap.appendChild(actions);
 
-    wrap.appendChild(content);
-    wrap.appendChild(actions);
-
-    // after DOM in place, set star highlights based on user rating or average
+    // Set star highlights
     updateStarsUI(entry.id, starsDiv, avgSpan);
 
     return wrap;
   }
 
-  // Update UI for stars: highlight user's rating if exists else highlight rounded average
-  function updateStarsUI(jokeId, starsDiv, avgSpan){
-    // fetch latest aggregates quickly
-    db.collection('jokes').doc(jokeId).get().then(jsnap=>{
-      const jd = jsnap.exists ? jsnap.data() : {};
-      const avg = jd.ratingAverage || 0;
-      const count = jd.ratingCount || 0;
-      avgSpan.textContent = `Rating: ${fmtAvg(avg)} / 5 (${count} votes)`;
-    }).catch(()=>{});
+  // ---------------- STAR CLICK HANDLER ----------------
+  function starClickHandler(e){
+    e.preventDefault();
+    const sb = e.currentTarget;
+    const jokeEl = sb.closest('.joke');
+    if (!jokeEl) return;
+
+    const jokeId = jokeEl.dataset.id;
+    const value = Number(sb.dataset.value);
 
     if (!currentUID) {
-      // highlight by average
-      db.collection('jokes').doc(jokeId).get().then(jsnap=>{
-        const jd = jsnap.exists ? jsnap.data() : {};
-        const avgRounded = Math.round(jd.ratingAverage || 0);
-        Array.from(starsDiv.children).forEach(btn => {
-          btn.classList.toggle('star-on', Number(btn.dataset.value) <= avgRounded);
-        });
-      }).catch(()=>{});
+      auth.signInAnonymously().then(() => {
+        setTimeout(() => { if(currentUID) rateJoke(jokeId, value); }, 300);
+      }).catch(err => { console.error('Anonymous login failed', err); alert('Unable to authenticate for rating.'); });
       return;
     }
 
-    // fetch user's rating
+    rateJoke(jokeId, value);
+  }
+
+  // ---------------- UPDATE STARS UI ----------------
+  function updateStarsUI(jokeId, starsDiv, avgSpan){
+    db.collection('jokes').doc(jokeId).get().then(jsnap=>{
+      const jd = jsnap.exists ? jsnap.data() : {};
+      const avgRounded = Math.round(jd.ratingAverage || 0);
+      const count = jd.ratingCount || 0;
+      avgSpan.textContent = `Rating: ${fmtAvg(jd.ratingAverage||0)} / 5 (${count} votes)`;
+    }).catch(()=>{});
+
+    if (!currentUID) return;
+
     db.collection('jokes').doc(jokeId).collection('ratings').doc(currentUID).get().then(rsnap=>{
-      if (rsnap.exists) {
-        const ur = rsnap.data().rating;
-        Array.from(starsDiv.children).forEach(btn => {
-          btn.classList.toggle('star-on', Number(btn.dataset.value) <= ur);
-        });
-      } else {
-        // use average
-        db.collection('jokes').doc(jokeId).get().then(jsnap=>{
-          const jd = jsnap.exists ? jsnap.data() : {};
-          const avgRounded = Math.round(jd.ratingAverage || 0);
-          Array.from(starsDiv.children).forEach(btn => {
-            btn.classList.toggle('star-on', Number(btn.dataset.value) <= avgRounded);
-          });
-        }).catch(()=>{});
-      }
+      const rating = rsnap.exists ? rsnap.data().rating : null;
+      const highlight = rating !== null ? rating : Math.round(rsnap.exists ? rsnap.data().ratingAverage||0 : 0);
+      Array.from(starsDiv.children).forEach(btn => btn.classList.toggle('star-on', Number(btn.dataset.value) <= highlight));
     }).catch(()=>{});
   }
 
-  // Rate a joke with transaction: per-user rating + update aggregates
+  // ---------------- RATE JOKE FUNCTION ----------------
   function rateJoke(jokeId, newRating){
-    if (!currentUID) {
-      alert('Signing in... please try again in a moment.');
-      auth.signInAnonymously().catch(()=>{});
-      return;
-    }
+    if (!currentUID) return;
+
     const jokeRef = db.collection('jokes').doc(jokeId);
     const userRef = jokeRef.collection('ratings').doc(currentUID);
 
     db.runTransaction(async tx => {
-      const [jSnap, rSnap] = await Promise.all([tx.get(jokeRef), tx.get(userRef)]);
-      if (!jSnap.exists) throw new Error('Joke missing');
+      const jSnap = await tx.get(jokeRef);
+      if (!jSnap.exists) throw new Error('Joke does not exist.');
+
+      const rSnap = await tx.get(userRef);
       const jd = jSnap.data();
+
       let ratingSum = jd.ratingSum || 0;
       let ratingCount = jd.ratingCount || 0;
-      const prev = rSnap.exists ? (rSnap.data().rating || 0) : null;
+      const prevRating = rSnap.exists ? (rSnap.data().rating || 0) : null;
 
-      if (prev === null) {
-        ratingSum = ratingSum + newRating;
-        ratingCount = ratingCount + 1;
-      } else {
-        ratingSum = ratingSum - prev + newRating;
-      }
+      if(prevRating === null){ ratingSum += newRating; ratingCount += 1; }
+      else { ratingSum = ratingSum - prevRating + newRating; }
+
       const ratingAverage = ratingCount ? (ratingSum / ratingCount) : 0;
 
-      tx.set(userRef, { rating: newRating, uid: currentUID }, { merge: true });
-      tx.update(jokeRef, { ratingSum: ratingSum, ratingCount: ratingCount, ratingAverage: ratingAverage });
-    }).then(()=> {
-      // UI will update via snapshot or manual update
+      tx.set(userRef, { rating: newRating, uid: currentUID }, { merge:true });
+      tx.update(jokeRef, { ratingSum, ratingCount, ratingAverage });
+    }).then(() => {
+      const starsDiv = document.querySelector(`.joke[data-id="${jokeId}"] .stars`);
+      const avgSpan = document.querySelector(`.joke[data-id="${jokeId}"] .avg-text`);
+      if(starsDiv && avgSpan) updateStarsUI(jokeId, starsDiv, avgSpan);
+      console.log(`Rated joke ${jokeId} with ${newRating} stars`);
     }).catch(err => {
       console.error('Rating failed', err);
-      alert('Failed to save rating. Try again.');
+      alert('Unable to save your rating. Please try again.');
     });
   }
 
-  // Subscription: try ratingAverage ordering, fallback to time if index missing
+  // ---------------- SUBSCRIPTIONS ----------------
   function subscribePrimary(){
-    if (unsubscribeCurrent) { unsubscribeCurrent(); unsubscribeCurrent = null; }
+    if(unsubscribeCurrent) unsubscribeCurrent();
     try {
       const q = db.collection('jokes').orderBy('ratingAverage','desc').orderBy('time','desc');
-      unsubscribeCurrent = q.onSnapshot(snapshot => {
-        renderSnapshot(snapshot);
-      }, err => {
-        console.warn('Primary query failed, falling back to time ordering:', err);
-        subscribeTime();
-      });
-    } catch(e) {
-      console.warn('Primary subscribe error, fallback', e);
-      subscribeTime();
-    }
+      unsubscribeCurrent = q.onSnapshot(renderSnapshot, err => { console.warn('Primary query failed', err); subscribeTime(); });
+    } catch(e){ subscribeTime(); }
   }
   function subscribeTime(){
-    if (unsubscribeCurrent) { unsubscribeCurrent(); unsubscribeCurrent = null; }
+    if(unsubscribeCurrent) unsubscribeCurrent();
     const q = db.collection('jokes').orderBy('time','desc');
-    unsubscribeCurrent = q.onSnapshot(snapshot => {
-      renderSnapshot(snapshot);
-    }, err => {
+    unsubscribeCurrent = q.onSnapshot(renderSnapshot, err => {
       console.error('Time query failed', err);
       jokeListEl.innerHTML = '<div class="empty">Unable to load jokes.</div>';
     });
   }
 
-  // Render snapshot
   function renderSnapshot(snapshot){
     jokeListEl.innerHTML = '';
-    if (snapshot.empty){
-      jokeListEl.appendChild(Object.assign(document.createElement('div'),{className:'empty',textContent:'No entries yet — be the first to post.'}));
+    if(snapshot.empty){
+      jokeListEl.appendChild(Object.assign(document.createElement('div'), {className:'empty', textContent:'No entries yet — be the first to post.'}));
       return;
     }
-    snapshot.forEach(doc=>{
+    snapshot.forEach(doc => {
       const d = doc.data();
       const entry = {
         id: doc.id,
         author: d.author,
         text: d.text,
         time: d.time ? d.time.toDate() : null,
-        ratingSum: d.ratingSum || 0,
-        ratingCount: d.ratingCount || 0,
-        ratingAverage: d.ratingAverage || 0
+        ratingSum: d.ratingSum||0,
+        ratingCount: d.ratingCount||0,
+        ratingAverage: d.ratingAverage||0
       };
       jokeListEl.appendChild(createJokeNode(entry));
     });
   }
 
-  // Sorting control
-  sortSelect.addEventListener('change', ()=>{
-    if (sortSelect.value === 'time') subscribeTime();
-    else subscribePrimary();
-  });
+  sortSelect.addEventListener('change', ()=>{ if(sortSelect.value==='time') subscribeTime(); else subscribePrimary(); });
 
-  // Add new joke (waits for auth & checkbox)
+  // ---------------- SUBMIT / PREVIEW ----------------
   submitBtn.addEventListener('click', async ()=>{
-    if (!agreeCheckbox.checked){ alert('Please agree to the community guidelines.'); return; }
-    if (!currentUID){ alert('Signing in... please wait a moment and try again.'); return; }
-    const text = jokeInput.value.trim();
-    if(!text) return;
-    try {
+    if(!agreeCheckbox.checked){ alert('Please agree to the community guidelines.'); return; }
+    if(!currentUID){ alert('Signing in... please wait a moment.'); return; }
+    const text = jokeInput.value.trim(); if(!text) return;
+    try{
       await db.collection('jokes').add({
-        author: authorInput.value.trim() || 'Anonymous',
+        author: authorInput.value.trim()||'Anonymous',
         text: text,
         time: firebase.firestore.FieldValue.serverTimestamp(),
-        ratingSum: 0,
-        ratingCount: 0,
-        ratingAverage: 0
+        ratingSum:0,
+        ratingCount:0,
+        ratingAverage:0
       });
       jokeInput.value=''; authorInput.value='';
-      // snapshot listener will show new joke
-    } catch(err){
+    }catch(err){
       console.error('Add failed', err);
       alert('Failed to submit. Please try again.');
     }
   });
 
   previewBtn.addEventListener('click', ()=>{
-    if (!agreeCheckbox.checked){ alert('Please agree to the community guidelines.'); return; }
-    const text = jokeInput.value.trim(); if (!text) return;
-    const tmp = { id:'tmp', author: authorInput.value || 'You (preview)', text: text, time: new Date(), ratingSum:0, ratingCount:0, ratingAverage:0 };
+    if(!agreeCheckbox.checked){ alert('Please agree to the community guidelines.'); return; }
+    const text = jokeInput.value.trim(); if(!text) return;
+    const tmp = { id:'tmp', author: authorInput.value||'You (preview)', text:text, time: new Date(), ratingSum:0, ratingCount:0, ratingAverage:0 };
     const el = createJokeNode(tmp);
     jokeListEl.insertBefore(el, jokeListEl.firstChild);
     setTimeout(()=>{ if(el.parentNode) el.remove(); }, 3000);
   });
 
-  // Kick off
-  // Start with selected sort
-  if (sortSelect.value === 'time') subscribeTime(); else subscribePrimary();
+  // ---------------- INITIAL SUBSCRIBE ----------------
+  if(sortSelect.value==='time') subscribeTime(); else subscribePrimary();
 
-  // Optional: expose currentUID for debugging
-  window.__LOHS = { getCurrentUID: () => currentUID };
+  window.__LOHS = { getCurrentUID:()=>currentUID };
 </script>
-</body>
-</html>
