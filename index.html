@@ -7,7 +7,7 @@
 
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:wght@500;700&display=swap" rel="stylesheet">
 
-<!-- Firebase (MUST be loaded before your code) -->
+<!-- Firebase scripts (must load first!) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -70,7 +70,7 @@
   .joke{
     display:flex;flex-direction:column;gap:10px;padding:18px;border-radius:12px;
     background:linear-gradient(180deg,var(--bg-inner),#fdfcfb);
-    border:1px solid rgba(0,0,0,0.04);box-shadow:var(--shadow-2);position:relative;
+    border:1px solid rgba(0,0,0,0.04);box-shadow:var(--shadow-2);
   }
   .joke::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;border-top-left-radius:12px;border-bottom-left-radius:12px;background:linear-gradient(180deg,var(--accent),var(--accent-2));}
   .joke-content{display:block;}
@@ -78,7 +78,6 @@
   .meta .who{font-weight:700;color:var(--text);}
   .joke-text{font-size:15px;color:var(--text);line-height:1.5;white-space:pre-wrap;}
 
-  /* Stars area: stars on left, avg text on right */
   .rating-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:6px;}
   .stars{display:flex;gap:6px;align-items:center;}
   .star-btn{
@@ -93,12 +92,7 @@
   .icon-btn{background:transparent;border:none;cursor:pointer;padding:6px 8px;font-size:13px;color:var(--muted);border-radius:8px;}
   .icon-btn:hover{background:rgba(0,0,0,0.03);color:var(--text);transform:translateY(-2px);}
   .empty{padding:28px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.8),rgba(250,249,247,0.8));text-align:center;color:var(--muted);font-size:15px;border:1px dashed rgba(0,0,0,0.04);}
-
   .notice{font-size:13px;color:var(--muted);margin:8px 0;}
-
-  /* admin / error banner */
-  .banner{margin:12px 0;padding:12px;border-radius:10px;background:#fff4e5;border:1px solid rgba(176,137,75,0.15);color:#6b4a12;font-size:14px;}
-  .banner a{color:var(--text);font-weight:600;text-decoration:underline;}
 </style>
 </head>
 <body>
@@ -111,8 +105,6 @@
     </header>
 
     <main class="card" role="main" aria-labelledby="page-title">
-      <div id="diagnostics"></div>
-
       <div class="intro">
         <h2 id="page-title">Joke Wall — tasteful and timeless</h2>
         <p class="notice">Post a short joke, aphorism, or witty line.</p>
@@ -157,362 +149,182 @@
   </div>
 
 <script>
-/* ---------------- FIREBASE CONFIG ----------------
-   Replace these values with your project's config if they differ.
-   NOTE: keep these in the client; changing them won't fix security rules.
-*/
-const firebaseConfig = {
-  apiKey: "AIzaSyBWNQ1vM2Ki4ReBCOrrCD8XfC1iVhwlsX8",
-  authDomain: "comedy-club-alpha.firebaseapp.com",
-  projectId: "comedy-club-alpha",
-  storageBucket: "comedy-club-alpha.appspot.com",
-  messagingSenderId: "251530882249",
-  appId: "1:251530882249:web:4b5c1aa8e2de9273a0b118",
-  measurementId: "G-JZXQ7ZXQ7M"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-const auth = firebase.auth();
-
-// Admin UID placeholder (if you have an admin user, paste their UID here)
-const adminUID = "viFrocQunxR1y0Pma5DHihAVeWF2";
-
-/* UI refs */
-const diagnostics = document.getElementById('diagnostics');
-const jokeListEl = document.getElementById('jokeList');
-const jokeInput = document.getElementById('joke');
-const authorInput = document.getElementById('author');
-const submitBtn = document.getElementById('submitBtn');
-const previewBtn = document.getElementById('previewBtn');
-const agreeCheckbox = document.getElementById('agreeCheckbox');
-const sortSelect = document.getElementById('sortSelect');
-
-let currentUID = null;
-let unsubscribeCurrent = null;
-
-/* Helpers */
-function fmtTime(d){ return d ? d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}) : ''; }
-function fmtAvg(avg){ return (Math.round((avg||0) * 10) / 10).toFixed(1); }
-function showBanner(html){ diagnostics.innerHTML = '<div class="banner">'+html+'</div>'; }
-function clearBanner(){ diagnostics.innerHTML = ''; }
-
-/* Enable/disable submit buttons */
-function updateActionButtons(){
-  const ready = agreeCheckbox.checked && currentUID !== null;
-  submitBtn.disabled = !ready;
-  previewBtn.disabled = !ready;
-}
-agreeCheckbox.addEventListener('change', updateActionButtons);
-
-/* ---------------- AUTH ---------------- */
-auth.onAuthStateChanged(user => {
-  if (!user) {
-    // try signing in anonymously (idempotent)
-    auth.signInAnonymously().catch(err => {
-      console.error('Anonymous auth failed', err);
-      showBanner('Unable to sign in anonymously. Check console for details.');
-    });
-  } else {
-    currentUID = user.uid;
-    updateActionButtons();
-    // refresh UI pieces that depend on user
-    document.querySelectorAll('.joke').forEach(j => {
-      const id = j.dataset.id;
-      const starsDiv = j.querySelector('.stars');
-      const avgSpan = j.querySelector('.avg-text');
-      if (id && starsDiv && avgSpan) updateStarsUI(id, starsDiv, avgSpan);
-      const del = j.querySelector('.delete-btn');
-      if (del) del.style.display = (currentUID === adminUID) ? 'inline-flex' : 'none';
-    });
-  }
-});
-
-/* ---------------- CREATE JOKE DOM ---------------- */
-function createJokeNode(entry){
-  const wrap = document.createElement('article');
-  wrap.className = 'joke';
-  wrap.dataset.id = entry.id;
-
-  const content = document.createElement('div');
-  content.className = 'joke-content';
-
-  const meta = document.createElement('div');
-  meta.className = 'meta';
-  const who = document.createElement('div'); who.className = 'who'; who.textContent = entry.author || 'Anonymous';
-  const when = document.createElement('div'); when.className='time'; when.textContent = entry.time ? fmtTime(entry.time) : '';
-  meta.appendChild(who); meta.appendChild(when);
-
-  const text = document.createElement('div'); text.className='joke-text'; text.textContent = entry.text;
-  content.appendChild(meta); content.appendChild(text);
-
-  // Rating row
-  const ratingRow = document.createElement('div'); ratingRow.className = 'rating-row';
-  const starsDiv = document.createElement('div'); starsDiv.className='stars';
-  for(let v=1; v<=5; v++){
-    const sb = document.createElement('button');
-    sb.className = 'star-btn';
-    sb.innerText = '★';
-    sb.dataset.value = v;
-    sb.title = `${v} star${v>1?'s':''}`;
-    sb.addEventListener('click', starClickHandler);
-    starsDiv.appendChild(sb);
-  }
-
-  const avgSpan = document.createElement('div'); avgSpan.className='avg-text';
-  avgSpan.textContent = `Rating: ${fmtAvg(entry.ratingAverage||0)} / 5 (${entry.ratingCount||0} votes)`;
-  ratingRow.appendChild(starsDiv); ratingRow.appendChild(avgSpan);
-  content.appendChild(ratingRow);
-
-  // Actions
-  const actions = document.createElement('div'); actions.className='joke-actions';
-  const copyBtn = document.createElement('button'); copyBtn.className='icon-btn'; copyBtn.textContent='Copy';
-  copyBtn.onclick = ()=> navigator.clipboard.writeText(`${entry.text} — ${entry.author||'Anonymous'}`).catch(()=>{});
-  const delBtn = document.createElement('button'); delBtn.className='icon-btn delete-btn'; delBtn.textContent='Remove';
-  delBtn.style.display = (currentUID === adminUID) ? 'inline-flex' : 'none';
-  delBtn.onclick = ()=> {
-    if (!confirm('Remove this joke?')) return;
-    db.collection('jokes').doc(entry.id).delete().catch(err=>{ console.error('Delete failed', err); alert('Delete failed'); });
+document.addEventListener('DOMContentLoaded', () => {
+  // ---------------- FIREBASE CONFIG ----------------
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_AUTH_DOMAIN",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_STORAGE_BUCKET",
+    messagingSenderId: "YOUR_MESSAGING_ID",
+    appId: "YOUR_APP_ID"
   };
-  actions.appendChild(copyBtn); actions.appendChild(delBtn);
 
-  wrap.appendChild(content); wrap.appendChild(actions);
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const auth = firebase.auth();
 
-  // Set star highlights
-  updateStarsUI(entry.id, starsDiv, avgSpan);
+  // --- ADMIN UID ---
+  const adminUID = "viFrocQunxR1y0Pma5DHihAVeWF2"; // <-- Replace with your Firebase UID
 
-  return wrap;
-}
+  // UI refs
+  const jokeListEl = document.getElementById('jokeList');
+  const jokeInput = document.getElementById('joke');
+  const authorInput = document.getElementById('author');
+  const submitBtn = document.getElementById('submitBtn');
+  const previewBtn = document.getElementById('previewBtn');
+  const agreeCheckbox = document.getElementById('agreeCheckbox');
+  const sortSelect = document.getElementById('sortSelect');
 
-/* ---------------- STAR CLICK HANDLER ---------------- */
-function starClickHandler(e){
-  e.preventDefault();
-  const sb = e.currentTarget;
-  const jokeEl = sb.closest('.joke');
-  if (!jokeEl) return;
+  let currentUID = null;
+  let unsubscribeCurrent = null;
 
-  const jokeId = jokeEl.dataset.id;
-  const value = Number(sb.dataset.value);
+  function fmtTime(d){ return d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }
+  function fmtAvg(avg){ return (Math.round((avg||0)*10)/10).toFixed(1); }
 
-  if (!currentUID) {
-    auth.signInAnonymously().then(() => {
-      setTimeout(() => { if(currentUID) rateJoke(jokeId, value); }, 400);
-    }).catch(err => { console.error('Anonymous login failed', err); alert('Unable to authenticate for rating.'); });
-    return;
+  // --- AUTH ---
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) await auth.signInAnonymously();
+    currentUID = user ? user.uid : null;
+    updateActionButtons();
+  });
+
+  function updateActionButtons(){
+    const ready = agreeCheckbox.checked && currentUID !== null;
+    submitBtn.disabled = !ready;
+    previewBtn.disabled = !ready;
+  }
+  agreeCheckbox.addEventListener('change', updateActionButtons);
+
+  // --- JOKES DISPLAY ---
+  function createJokeNode(entry){
+    const wrap = document.createElement('article');
+    wrap.className = 'joke';
+    wrap.dataset.id = entry.id;
+
+    const content = document.createElement('div');
+    content.className = 'joke-content';
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    const who = document.createElement('div'); who.className = 'who'; who.textContent = entry.author || 'Anonymous';
+    const when = document.createElement('div'); when.className='time'; when.textContent = entry.time ? fmtTime(entry.time) : '';
+    meta.appendChild(who); meta.appendChild(when);
+
+    const text = document.createElement('div'); text.className='joke-text'; text.textContent = entry.text;
+
+    content.appendChild(meta);
+    content.appendChild(text);
+
+    // Rating row
+    const ratingRow = document.createElement('div'); ratingRow.className='rating-row';
+    const starsDiv = document.createElement('div'); starsDiv.className='stars';
+
+    for(let v=1; v<=5; v++){
+      const sb = document.createElement('button');
+      sb.className='star-btn';
+      sb.innerText='★';
+      sb.dataset.value=v;
+      sb.title=`${v} star${v>1?'s':''}`;
+      sb.addEventListener('click', e=>{
+        e.preventDefault();
+        if(!currentUID){ auth.signInAnonymously(); setTimeout(()=>{ if(currentUID) rateJoke(entry.id,v); },500); return; }
+        rateJoke(entry.id,v);
+      });
+      starsDiv.appendChild(sb);
+    }
+
+    const avgSpan = document.createElement('div'); avgSpan.className='avg-text';
+    avgSpan.textContent=`Rating: ${fmtAvg(entry.ratingAverage||0)} / 5 (${entry.ratingCount||0} votes)`;
+
+    ratingRow.appendChild(starsDiv); ratingRow.appendChild(avgSpan);
+    content.appendChild(ratingRow);
+
+    // Admin delete button
+    const actions = document.createElement('div'); actions.className='joke-actions';
+    if(currentUID===adminUID){
+      const delBtn = document.createElement('button'); delBtn.className='icon-btn'; delBtn.textContent='Remove';
+      delBtn.onclick = ()=>{
+        if(confirm('Remove this joke?')) db.collection('jokes').doc(entry.id).delete().catch(err=>alert('Delete failed'));
+      };
+      actions.appendChild(delBtn);
+    }
+
+    wrap.appendChild(content);
+    wrap.appendChild(actions);
+    jokeListEl.appendChild(wrap);
+
+    updateStarsUI(entry.id, starsDiv, avgSpan);
+    return wrap;
   }
 
-  rateJoke(jokeId, value);
-}
-
-/* ---------------- UPDATE STARS UI ---------------- */
-function updateStarsUI(jokeId, starsDiv, avgSpan){
-  // quickly fetch aggregate to update avg text
-  db.collection('jokes').doc(jokeId).get().then(jsnap=>{
-    const jd = jsnap.exists ? jsnap.data() : {};
-    const count = jd.ratingCount || 0;
-    avgSpan.textContent = `Rating: ${fmtAvg(jd.ratingAverage||0)} / 5 (${count} votes)`;
-  }).catch(()=>{});
-
-  if (!currentUID) {
-    // highlight by average if not signed in
-    db.collection('jokes').doc(jokeId).get().then(jsnap=>{
-      const jd = jsnap.exists ? jsnap.data() : {};
-      const avgRounded = Math.round(jd.ratingAverage || 0);
-      Array.from(starsDiv.children).forEach(btn => btn.classList.toggle('star-on', Number(btn.dataset.value) <= avgRounded));
+  function updateStarsUI(jokeId, starsDiv, avgSpan){
+    if(!currentUID) return;
+    db.collection('jokes').doc(jokeId).collection('ratings').doc(currentUID).get().then(rsnap=>{
+      const ur = rsnap.exists ? rsnap.data().rating : 0;
+      Array.from(starsDiv.children).forEach(btn=>{
+        btn.classList.toggle('star-on', Number(btn.dataset.value)<=ur);
+      });
     }).catch(()=>{});
-    return;
   }
 
-  // highlight by user's rating if any
-  db.collection('jokes').doc(jokeId).collection('ratings').doc(currentUID).get().then(rsnap=>{
-    if (rsnap.exists) {
-      const ur = rsnap.data().rating || 0;
-      Array.from(starsDiv.children).forEach(btn => btn.classList.toggle('star-on', Number(btn.dataset.value) <= ur));
-    } else {
-      // fallback to average
-      db.collection('jokes').doc(jokeId).get().then(jsnap=>{
-        const jd = jsnap.exists ? jsnap.data() : {};
-        const avgRounded = Math.round(jd.ratingAverage || 0);
-        Array.from(starsDiv.children).forEach(btn => btn.classList.toggle('star-on', Number(btn.dataset.value) <= avgRounded));
-      }).catch(()=>{});
-    }
-  }).catch(()=>{});
-}
+  function rateJoke(jokeId,newRating){
+    if(!currentUID){ auth.signInAnonymously(); return; }
+    const jokeRef = db.collection('jokes').doc(jokeId);
+    const userRef = jokeRef.collection('ratings').doc(currentUID);
 
-/* ---------------- RATE JOKE FUNCTION ---------------- */
-function rateJoke(jokeId, newRating){
-  if (!currentUID) {
-    alert('Not signed in yet. Please try again in a moment.');
-    return;
+    db.runTransaction(async tx=>{
+      const [jSnap,rSnap] = await Promise.all([tx.get(jokeRef),tx.get(userRef)]);
+      if(!jSnap.exists) throw new Error('Joke missing');
+      const jd=jSnap.data();
+      let sum=jd.ratingSum||0,count=jd.ratingCount||0;
+      const prev=rSnap.exists?rSnap.data().rating:null;
+      if(prev===null){ sum+=newRating; count+=1; } else { sum=sum-prev+newRating; }
+      const avg=count?sum/count:0;
+      tx.set(userRef,{rating:newRating,uid:currentUID},{merge:true});
+      tx.update(jokeRef,{ratingSum:sum,ratingCount:count,ratingAverage:avg});
+    }).catch(err=>{ console.error('Rating failed',err); alert('Failed to save rating. Try again.'); });
   }
 
-  const jokeRef = db.collection('jokes').doc(jokeId);
-  const userRef = jokeRef.collection('ratings').doc(currentUID);
-
-  db.runTransaction(async tx => {
-    const jSnap = await tx.get(jokeRef);
-    if (!jSnap.exists) throw new Error('Joke does not exist.');
-
-    const rSnap = await tx.get(userRef);
-    const jd = jSnap.data() || {};
-
-    let ratingSum = jd.ratingSum || 0;
-    let ratingCount = jd.ratingCount || 0;
-    const prevRating = rSnap.exists ? (rSnap.data().rating || 0) : null;
-
-    if (prevRating === null){
-      ratingSum += newRating;
-      ratingCount += 1;
-    } else {
-      ratingSum = ratingSum - prevRating + newRating;
-    }
-
-    const ratingAverage = ratingCount ? (ratingSum / ratingCount) : 0;
-
-    tx.set(userRef, { rating: newRating, uid: currentUID }, { merge:true });
-    tx.update(jokeRef, { ratingSum, ratingCount, ratingAverage });
-  }).then(() => {
-    // refresh UI
-    const starsDiv = document.querySelector(`.joke[data-id="${jokeId}"] .stars`);
-    const avgSpan = document.querySelector(`.joke[data-id="${jokeId}"] .avg-text`);
-    if (starsDiv && avgSpan) updateStarsUI(jokeId, starsDiv, avgSpan);
-  }).catch(err => {
-    console.error('Rating failed', err);
-    // Inspect common known failure modes so we can give the user clear next steps.
-    if (err && err.code === 'permission-denied') {
-      showBanner(
-        'Permission denied when saving rating. Your Firestore security rules currently block writing. ' +
-        'To allow anonymous users to rate, open the Firebase Console → Firestore → Rules and allow signed-in users to write. ' +
-        'For quick testing, you can add: <code>allow write: if request.auth != null;</code>. ' +
-        '<br><br><a href="https://console.firebase.google.com/project/comedy-club-alpha/firestore/rules" target="_blank">Open Firestore Rules</a>'
-      );
-      alert('Unable to save rating: permission denied. See the banner at the top for next steps.');
-      return;
-    }
-
-    // Firestore may require a composite index for the sorting query: ratingAverage + time
-    if (err && typeof err.message === 'string' && err.message.toLowerCase().includes('requires an index')) {
-      showBanner(
-        'Firestore requires a composite index for sorting by ratingAverage + time. ' +
-        'Open Firebase Console → Firestore → Indexes and create a composite index on the "jokes" collection: ' +
-        '<strong>ratingAverage (desc)</strong>, <strong>time (desc)</strong>. ' +
-        '<br><br><a href="https://console.firebase.google.com/project/comedy-club-alpha/firestore/indexes" target="_blank">Open Indexes</a>'
-      );
-      alert('Unable to save rating: Firestore index required. See the top banner for next steps.');
-      return;
-    }
-
-    // Generic fallback
-    alert('Unable to save your rating. See console for details.');
-  });
-}
-
-/* ---------------- SUBSCRIPTIONS ---------------- */
-function subscribePrimary(){
-  if (unsubscribeCurrent) unsubscribeCurrent();
-  try {
-    const q = db.collection('jokes').orderBy('ratingAverage','desc').orderBy('time','desc');
-    unsubscribeCurrent = q.onSnapshot(renderSnapshot, err => {
-      console.warn('Primary query failed, falling back to time ordering:', err);
-      // If requires composite index, inform the user
-      if (err && typeof err.message === 'string' && err.message.toLowerCase().includes('requires an index')) {
-        showBanner(
-          'Primary ordering (Best rating) requires a composite index: create an index on jokes.ratingAverage (desc), time (desc). ' +
-          '<a href="https://console.firebase.google.com/project/comedy-club-alpha/firestore/indexes" target="_blank">Open Indexes</a>'
-        );
-      }
-      subscribeTime();
+  function subscribeTime(){
+    if(unsubscribeCurrent){ unsubscribeCurrent(); unsubscribeCurrent=null; }
+    const q=db.collection('jokes').orderBy('time','desc');
+    unsubscribeCurrent=q.onSnapshot(snapshot=>{
+      jokeListEl.innerHTML='';
+      if(snapshot.empty){ jokeListEl.innerHTML='<div class="empty">No entries yet — be the first to post.</div>'; return; }
+      snapshot.forEach(doc=>{
+        const d=doc.data();
+        createJokeNode({
+          id:doc.id,
+          author:d.author,
+          text:d.text,
+          time:d.time?d.time.toDate():null,
+          ratingSum:d.ratingSum||0,
+          ratingCount:d.ratingCount||0,
+          ratingAverage:d.ratingAverage||0
+        });
+      });
     });
-  } catch(e) {
-    console.warn('Primary subscribe error, fallback', e);
-    subscribeTime();
   }
-}
-function subscribeTime(){
-  if (unsubscribeCurrent) unsubscribeCurrent();
-  const q = db.collection('jokes').orderBy('time','desc');
-  unsubscribeCurrent = q.onSnapshot(renderSnapshot, err => {
-    console.error('Time query failed', err);
-    jokeListEl.innerHTML = '<div class="empty">Unable to load jokes.</div>';
-    if (err && err.code === 'permission-denied') {
-      showBanner(
-        'Permission denied reading jokes. Check Firestore rules. ' +
-        '<a href="https://console.firebase.google.com/project/comedy-club-alpha/firestore/rules" target="_blank">Open Firestore Rules</a>'
-      );
-    }
+
+  subscribeTime();
+
+  // Submit joke
+  submitBtn.addEventListener('click', async ()=>{
+    if(!agreeCheckbox.checked){ alert('Please agree to guidelines'); return; }
+    if(!currentUID){ auth.signInAnonymously(); alert('Signing in... try again'); return; }
+    const text=jokeInput.value.trim(); if(!text) return;
+    try{
+      await db.collection('jokes').add({
+        author: authorInput.value.trim()||'Anonymous',
+        text:text,
+        time:firebase.firestore.FieldValue.serverTimestamp(),
+        ratingSum:0,ratingCount:0,ratingAverage:0
+      });
+      jokeInput.value=''; authorInput.value='';
+    }catch(err){ console.error('Add failed',err); alert('Failed to submit.'); }
   });
-}
-
-function renderSnapshot(snapshot){
-  clearBanner(); // clear previous diagnostics when data loads successfully
-  jokeListEl.innerHTML = '';
-  if (snapshot.empty){
-    jokeListEl.appendChild(Object.assign(document.createElement('div'),{className:'empty',textContent:'No entries yet — be the first to post.'}));
-    return;
-  }
-  snapshot.forEach(doc=>{
-    const d = doc.data();
-    const entry = {
-      id: doc.id,
-      author: d.author,
-      text: d.text,
-      time: d.time ? d.time.toDate() : null,
-      ratingSum: d.ratingSum || 0,
-      ratingCount: d.ratingCount || 0,
-      ratingAverage: d.ratingAverage || 0
-    };
-    jokeListEl.appendChild(createJokeNode(entry));
-  });
-}
-
-/* Sorting control */
-sortSelect.addEventListener('change', ()=>{ if (sortSelect.value === 'time') subscribeTime(); else subscribePrimary(); });
-
-/* Submit / Preview */
-submitBtn.addEventListener('click', async ()=>{
-  if(!agreeCheckbox.checked){ alert('Please agree to the community guidelines.'); return; }
-  if(!currentUID){ alert('Signing in... please wait a moment.'); return; }
-  const text = jokeInput.value.trim(); if(!text) return;
-  try{
-    await db.collection('jokes').add({
-      author: authorInput.value.trim()||'Anonymous',
-      text: text,
-      time: firebase.firestore.FieldValue.serverTimestamp(),
-      ratingSum:0,
-      ratingCount:0,
-      ratingAverage:0
-    });
-    jokeInput.value=''; authorInput.value='';
-  }catch(err){
-    console.error('Add failed', err);
-    if (err && err.code === 'permission-denied') {
-      showBanner(
-        'Add failed: permission denied. To allow posting from anonymous users, update Firestore rules (see console). ' +
-        '<a href="https://console.firebase.google.com/project/comedy-club-alpha/firestore/rules" target="_blank">Open Firestore Rules</a>'
-      );
-      alert('Failed to submit: permission denied.');
-    } else {
-      alert('Failed to submit. See console for details.');
-    }
-  }
 });
-
-previewBtn.addEventListener('click', ()=>{
-  if(!agreeCheckbox.checked){ alert('Please agree to the community guidelines.'); return; }
-  const text = jokeInput.value.trim(); if(!text) return;
-  const tmp = { id:'tmp', author: authorInput.value||'You (preview)', text: text, time: new Date(), ratingSum:0, ratingCount:0, ratingAverage:0 };
-  const el = createJokeNode(tmp);
-  jokeListEl.insertBefore(el, jokeListEl.firstChild);
-  setTimeout(()=>{ if(el.parentNode) el.remove(); }, 3000);
-});
-
-/* Initial subscription */
-if (sortSelect.value === 'time') subscribeTime(); else subscribePrimary();
-
-/* expose debug helper */
-window.__LOHS = { getCurrentUID: () => currentUID };
-
 </script>
 </body>
 </html>
-
