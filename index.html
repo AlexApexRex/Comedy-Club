@@ -1,112 +1,131 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="description" content="LOHS Comedy Club — tasteful, modern joke wall." />
-  <title>LOHS Comedy Club — Refined Joke Wall</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>LOHS Comedy Club — Refined Joke Wall</title>
 
-  <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:wght@500;700&display=swap" rel="stylesheet">
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
-  <style>
-    /* --- Your existing CSS --- */
-    :root{
-      --bg-outer: #e8e8e8;
-      --bg-inner: #ffffff;
-      --muted: #6b6b6b;
-      --text: #212121;
-      --accent: #b0894b;
-      --accent-2: #d6c4a1;
-      --radius: 12px;
-      --shadow-1: 0 6px 20px rgba(20,20,20,0.06);
-      --shadow-2: 0 2px 6px rgba(20,20,20,0.06);
-    }
-    html, body {height: 100%; margin: 0; padding: 0;}
-    body{
-      margin:0;
-      background: linear-gradient(180deg, var(--bg-outer) 0%, #f7f7f7 100%);
-      color: var(--text);
-      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      display: flex;
-      justify-content: center;
-      padding: 48px 20px;
-    }
-    .container{width:100%;max-width:1024px;min-height:600px;}
-    header{display:flex;gap:20px;align-items:center;margin-bottom:36px;}
-    .brand h1{margin:0;font-family:"Playfair Display", serif;font-size:28px;color:var(--text);font-weight:600;}
-    .brand p{margin:0;color:var(--muted);font-size:14px;}
-    .card{background: var(--bg-inner);border-radius: var(--radius);box-shadow: var(--shadow-1);padding:40px;}
-    .intro{display:flex;gap:24px;align-items:center;margin-bottom:24px;}
-    .intro h2{margin:0;font-family:"Playfair Display", serif;font-size:22px;color:var(--text);font-weight:600;}
-    .intro p{margin:6px 0 0 0;color:var(--muted);font-size:14px;}
-    form.joke-form{display:flex;flex-direction: column;gap:12px;margin-top:18px;margin-bottom:18px;}
-    .field{display:flex;flex-direction:column;gap:8px;width:100%;}
-    input[type="text"], textarea{width:100%;padding:14px 16px;border-radius:10px;border:1px solid rgba(0,0,0,0.06);background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(248,247,246,0.95));font-size:15px;color:var(--text);resize: vertical;min-height:50px;box-shadow: var(--shadow-2);transition: all 0.18s ease;}
-    input[type="text"]:focus, textarea:focus{outline: none;border-color: var(--accent);box-shadow: 0 0 8px rgba(176,137,75,0.2);}
-    .agreement{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:14px;margin-bottom:4px;}
-    .agreement a {color:var(--text);text-decoration:underline;cursor:pointer;font-weight:600;}
-    .form-actions{display:flex;gap:10px;align-items:center;justify-content:flex-end;}
-    button{font-family: "Inter", sans-serif;font-weight:600;font-size:14px;padding:10px 16px;border-radius:8px;border:none;cursor:pointer;transition: all 180ms ease;}
-    #submitBtn{background: var(--accent);color:white;}
-    #submitBtn:hover{opacity:0.9; transform:translateY(-2px);}
-    #previewBtn{background: var(--accent-2);color:#222;}
-    #previewBtn:hover{opacity:0.9; transform:translateY(-2px);}
-    button:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
-    .joke-list{margin-top:12px;display:flex;flex-direction:column;gap:12px;}
-    .joke{display:flex;gap:16px;align-items:flex-start;padding:18px;border-radius:12px;background: linear-gradient(180deg, var(--bg-inner), #fdfcfb);border: 1px solid rgba(0,0,0,0.04);box-shadow: var(--shadow-2);position:relative;transition: transform 0.18s ease, box-shadow 0.18s ease;}
-    .joke:hover{transform: translateY(-2px);box-shadow: 0 6px 18px rgba(20,20,20,0.08);}
-    .joke::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;border-top-left-radius:12px;border-bottom-left-radius:12px;background: linear-gradient(180deg, var(--accent), var(--accent-2));}
-    .joke-content{flex:1;}
-    .meta{display:flex;gap:10px;align-items:center;margin-bottom:6px;}
-    .meta .who{font-weight:700;font-size:13px;color:var(--text);}
-    .meta .time{font-size:12px;color:var(--muted);}
-    .joke-text{font-size:15px;color:var(--text);line-height:1.5;white-space:pre-wrap;}
-    .joke-actions{display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
-    .icon-btn {background:transparent;border:none;cursor:pointer;padding:6px 8px;font-size:13px;color:var(--muted);border-radius:8px;transition:all 160ms ease;}
-    .icon-btn:hover{color:var(--text);background:rgba(0,0,0,0.03);transform:translateY(-2px);}
-    .empty{padding:28px;border-radius:10px;background:linear-gradient(180deg, rgba(255,255,255,0.8), rgba(250,249,247,0.8));text-align:center;color:var(--muted);font-size:15px;border:1px dashed rgba(0,0,0,0.04);}
-    .filter-area{margin:10px 0;display:flex;gap:12px;align-items:center;}
-  </style>
+<style>
+  :root{
+    --bg-outer: #e8e8e8;
+    --bg-inner: #ffffff;
+    --muted: #6b6b6b;
+    --text: #212121;
+    --accent: #b0894b;
+    --accent-2: #d6c4a1;
+    --radius: 12px;
+    --shadow-1: 0 6px 20px rgba(20,20,20,0.06);
+    --shadow-2: 0 2px 6px rgba(20,20,20,0.06);
+  }
+  html,body{height:100%;margin:0;padding:0;}
+  body{
+    background:linear-gradient(180deg,var(--bg-outer) 0%, #f7f7f7 100%);
+    color:var(--text);
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial;
+    display:flex;justify-content:center;padding:48px 20px;
+  }
+  .container{width:100%;max-width:1024px;}
+  header{display:flex;align-items:center;gap:18px;margin-bottom:28px;}
+  .brand h1{margin:0;font-family:"Playfair Display",serif;font-size:28px;color:var(--text);font-weight:600;}
+  .brand p{margin:0;color:var(--muted);font-size:14px;}
+
+  .card{
+    background:var(--bg-inner);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow-1);
+    padding:36px;
+  }
+
+  .intro h2{margin:0;font-family:"Playfair Display",serif;font-size:22px;font-weight:600;}
+  .intro p{margin:6px 0 0 0;color:var(--muted);font-size:14px;}
+
+  form.joke-form{display:flex;flex-direction:column;gap:12px;margin-top:18px;margin-bottom:18px;}
+  .field{display:flex;flex-direction:column;gap:8px;width:100%;}
+  input[type="text"],textarea{
+    width:100%;padding:14px 16px;border-radius:10px;border:1px solid rgba(0,0,0,0.06);
+    background:linear-gradient(180deg,rgba(255,255,255,0.95),rgba(248,247,246,0.95));
+    font-size:15px;color:var(--text);resize:vertical;min-height:50px;box-shadow:var(--shadow-2);
+  }
+  input[type="text"]:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 8px rgba(176,137,75,0.2);}
+
+  .agreement{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:14px;margin-bottom:6px;}
+  .agreement a{color:var(--text);text-decoration:underline;}
+
+  .form-actions{display:flex;gap:10px;align-items:center;justify-content:flex-end;}
+  button{font-family:"Inter",sans-serif;font-weight:600;font-size:14px;padding:10px 16px;border-radius:8px;border:none;cursor:pointer;transition:all 160ms ease;}
+  #submitBtn{background:var(--accent);color:#fff;}
+  #previewBtn{background:var(--accent-2);color:#222;}
+  button:disabled{opacity:0.5;cursor:not-allowed;transform:none;}
+
+  .filter-row{display:flex;align-items:center;gap:12px;margin:8px 0 18px 0;font-size:14px;color:var(--muted);}
+
+  .joke-list{margin-top:12px;display:flex;flex-direction:column;gap:12px;}
+  .joke{
+    display:flex;flex-direction:column;gap:10px;padding:18px;border-radius:12px;
+    background:linear-gradient(180deg,var(--bg-inner),#fdfcfb);
+    border:1px solid rgba(0,0,0,0.04);box-shadow:var(--shadow-2);
+  }
+  .joke::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;border-top-left-radius:12px;border-bottom-left-radius:12px;background:linear-gradient(180deg,var(--accent),var(--accent-2));}
+  .joke-content{display:block;}
+  .meta{display:flex;gap:10px;align-items:center;color:var(--muted);font-size:13px;}
+  .meta .who{font-weight:700;color:var(--text);}
+  .joke-text{font-size:15px;color:var(--text);line-height:1.5;white-space:pre-wrap;}
+
+  /* Stars area: stars on left, avg text on right */
+  .rating-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:6px;}
+  .stars{display:flex;gap:6px;align-items:center;}
+  .star-btn{
+    background:transparent;border:none;cursor:pointer;font-size:20px;padding:6px;border-radius:6px;color:var(--muted);transition:all 120ms ease;
+  }
+  .star-btn:hover{transform:translateY(-2px);background:rgba(0,0,0,0.03);color:var(--text);}
+  .star-on{color:var(--accent);}
+
+  .avg-text{font-size:13px;color:var(--muted);white-space:nowrap;}
+
+  .joke-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:6px;}
+  .icon-btn{background:transparent;border:none;cursor:pointer;padding:6px 8px;font-size:13px;color:var(--muted);border-radius:8px;}
+  .icon-btn:hover{background:rgba(0,0,0,0.03);color:var(--text);transform:translateY(-2px);}
+  .empty{padding:28px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.8),rgba(250,249,247,0.8));text-align:center;color:var(--muted);font-size:15px;border:1px dashed rgba(0,0,0,0.04);}
+
+  /* small helper */
+  .notice{font-size:13px;color:var(--muted);margin:8px 0;}
+</style>
 </head>
-
 <body>
   <div class="container">
     <header class="brand">
       <div>
         <h1>LOHS Comedy Club</h1>
-        <p>Refined Joke Wall — share a moment of levity</p>
+        <p class="muted">Refined Joke Wall — share a moment of levity</p>
       </div>
     </header>
 
     <main class="card" role="main" aria-labelledby="page-title">
       <div class="intro">
-        <div class="title">
-          <h2 id="page-title">Joke Wall — tasteful and timeless</h2>
-          <p class="small">Post a short joke, aphorism, or witty line. The design favors clarity, space, and a classic palette.</p>
-        </div>
+        <h2 id="page-title">Joke Wall — tasteful and timeless</h2>
+        <p class="notice">Post a short joke, aphorism, or witty line.</p>
       </div>
 
-      <!-- Filter dropdown -->
-      <div class="filter-area">
+      <div class="filter-row">
         <label for="sortSelect">Sort by:</label>
-        <select id="sortSelect">
+        <select id="sortSelect" aria-label="Sort jokes">
           <option value="rating">Best rating</option>
           <option value="time">Newest</option>
         </select>
+        <div style="flex:1"></div>
+        <div class="notice">Inline rules: be respectful. (Full rules in admin panel)</div>
       </div>
 
-      <!-- Agreement -->
       <div class="agreement">
         <input id="agreeCheckbox" type="checkbox" />
-        <label for="agreeCheckbox">
-          I have read and agree to the <a id="guidelinesBtn">Community Guidelines</a>
-        </label>
+        <label for="agreeCheckbox">I have read and agree to the Community Guidelines</label>
       </div>
 
       <form class="joke-form" id="jokeForm" onsubmit="return false;">
@@ -132,210 +151,322 @@
     </main>
   </div>
 
-  <!-- Guidelines Modal -->
-  <div id="guidelinesModal" class="modal-backdrop" aria-hidden="true">
-    <div class="modal" role="dialog" aria-labelledby="modalTitle">
-      <h3 id="modalTitle">Community Guidelines</h3>
-      <p>
-        Please do not post offensive content. Repeated or severe violations may result in content removal.
-      </p>
-      <div class="modal-actions">
-        <button class="close-btn" id="modalClose">Close</button>
-        <button class="agree-btn" id="modalAgree">I agree</button>
-      </div>
-    </div>
-  </div>
+<script>
+  // ---------------- FIREBASE CONFIG (use your project values) ----------------
+  const firebaseConfig = {
+    apiKey: "AIzaSyBWNQ1vM2Ki4ReBCOrrCD8XfC1iVhwlsX8",
+    authDomain: "comedy-club-alpha.firebaseapp.com",
+    projectId: "comedy-club-alpha",
+    storageBucket: "comedy-club-alpha.appspot.com",
+    messagingSenderId: "251530882249",
+    appId: "1:251530882249:web:4b5c1aa8e2de9273a0b118",
+    measurementId: "G-JZXQ7ZXQ7M"
+  };
 
-  <script>
-    // ------------------ FIREBASE CONFIG ------------------
-    const firebaseConfig = {
-      apiKey: "AIzaSyBWNQ1vM2Ki4ReBCOrrCD8XfC1iVhwlsX8",
-      authDomain: "comedy-club-alpha.firebaseapp.com",
-      projectId: "comedy-club-alpha",
-      storageBucket: "comedy-club-alpha.appspot.com",
-      messagingSenderId: "251530882249",
-      appId: "1:251530882249:web:4b5c1aa8e2de9273a0b118",
-      measurementId: "G-JZXQ7ZXQ7M"
-    };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  const auth = firebase.auth();
 
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    const auth = firebase.auth();
+  // Replace with your admin UID (find in Firebase Console -> Authentication -> Users)
+  const adminUID = "viFrocQunxR1y0Pma5DHihAVeWF2";
 
-    // ------------------ ADMIN UID ------------------
-    const adminUID = "viFrocQunxR1y0Pma5DHihAVeWF2"; // Replace with your uid from console
+  // UI refs
+  const jokeListEl = document.getElementById('jokeList');
+  const jokeInput = document.getElementById('joke');
+  const authorInput = document.getElementById('author');
+  const submitBtn = document.getElementById('submitBtn');
+  const previewBtn = document.getElementById('previewBtn');
+  const agreeCheckbox = document.getElementById('agreeCheckbox');
+  const sortSelect = document.getElementById('sortSelect');
 
-    let currentUID = null;
+  let currentUID = null;
+  let unsubscribeCurrent = null;
+  let migrationTriggered = false;
 
-    // ------------------ AUTH ------------------
-    auth.onAuthStateChanged(user => {
-      if (!user) {
-        auth.signInAnonymously().catch(err => console.error("Anonymous sign-in failed:", err));
-      } else {
-        currentUID = user.uid;
-        console.log("Signed in UID:", currentUID);
-        if (agreeCheckbox.checked) submitBtn.disabled = false;
+  // Helpers
+  function fmtTime(d){ return d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}); }
+  function fmtAvg(avg){ return (Math.round((avg||0) * 10) / 10).toFixed(1); }
+
+  // sign in anonymously (single robust listener)
+  auth.onAuthStateChanged(async (user) => {
+    if (!user) {
+      try {
+        await auth.signInAnonymously();
+      } catch (e) {
+        console.error('Anonymous auth failed', e);
+        // show a small notice if needed
       }
-    });
-
-    // ------------------ UI ELEMENTS ------------------
-    const jokeListEl = document.getElementById('jokeList');
-    const jokeInput = document.getElementById('joke');
-    const authorInput = document.getElementById('author');
-    const submitBtn = document.getElementById('submitBtn');
-    const previewBtn = document.getElementById('previewBtn');
-    const agreeCheckbox = document.getElementById('agreeCheckbox');
-    const sortSelect = document.getElementById('sortSelect');
-    const guidelinesBtn = document.getElementById('guidelinesBtn');
-    const guidelinesModal = document.getElementById('guidelinesModal');
-    const modalClose = document.getElementById('modalClose');
-    const modalAgree = document.getElementById('modalAgree');
-
-    // ------------------ ACTION BUTTONS ------------------
-    function updateActionButtons() {
-      const ok = agreeCheckbox.checked && currentUID !== null;
-      submitBtn.disabled = !ok;
-      previewBtn.disabled = !ok;
-    }
-    agreeCheckbox.addEventListener('change', updateActionButtons);
-
-    guidelinesBtn.addEventListener('click', () => {
-      guidelinesModal.classList.add('open');
-      guidelinesModal.setAttribute('aria-hidden','false');
-    });
-    modalClose.addEventListener('click', ()=>{
-      guidelinesModal.classList.remove('open');
-      guidelinesModal.setAttribute('aria-hidden','true');
-    });
-    modalAgree.addEventListener('click', ()=>{
-      agreeCheckbox.checked = true;
+    } else {
+      currentUID = user.uid;
       updateActionButtons();
-      guidelinesModal.classList.remove('open');
-      guidelinesModal.setAttribute('aria-hidden','true');
-    });
-    guidelinesModal.addEventListener('click', (e)=>{
-      if(e.target===guidelinesModal){
-        guidelinesModal.classList.remove('open');
-        guidelinesModal.setAttribute('aria-hidden','true');
-      }
-    });
-
-    // ------------------ CREATE JOKE ELEMENT ------------------
-    function createJoke(entry){
-      const wrap = document.createElement('article'); wrap.className='joke'; wrap.dataset.id=entry.id;
-      const content = document.createElement('div'); content.className='joke-content';
-      const meta = document.createElement('div'); meta.className='meta';
-      const who = document.createElement('div'); who.className='who'; who.textContent = entry.author || 'Anonymous';
-      const time = document.createElement('div'); time.className='time'; time.textContent = entry.time ? entry.time.toLocaleString() : '';
-      meta.appendChild(who); meta.appendChild(time);
-      const text = document.createElement('div'); text.className='joke-text'; text.textContent = entry.text;
-      content.appendChild(meta); content.appendChild(text);
-
-      // Average rating display
-      const avg = document.createElement('div'); avg.style.fontSize='12px'; avg.style.color='var(--muted)';
-      const ratingVal = entry.ratingCount ? (entry.ratingSum / entry.ratingCount).toFixed(1) : "0.0";
-      avg.textContent = `Rating: ${ratingVal} / 5 (${entry.ratingCount} votes)`;
-      content.appendChild(avg);
-
-      // Rating stars
-      const actions = document.createElement('div'); actions.className='joke-actions';
-      for(let i=1;i<=5;i++){
-        const star = document.createElement('button');
-        star.textContent='★';
-        star.className='icon-btn';
-        star.onclick = async ()=> {
-          if(!currentUID) { alert("Auth not ready yet"); return; }
-          const docRef = db.collection('jokes').doc(entry.id);
-          await db.runTransaction(async tx=>{
-            const doc = await tx.get(docRef);
-            const data = doc.data();
-            const newSum = (data.ratingSum||0)+i;
-            const newCount = (data.ratingCount||0)+1;
-            tx.update(docRef,{ratingSum:newSum,ratingCount:newCount});
-          });
-        };
-        actions.appendChild(star);
-      }
-
-      // Delete / Copy buttons
-      const del = document.createElement('button'); del.className='icon-btn'; del.textContent='Remove';
-      if(currentUID && currentUID===adminUID) del.style.display='inline-flex'; else del.style.display='none';
-      del.onclick = ()=> db.collection('jokes').doc(entry.id).delete();
-      const copy = document.createElement('button'); copy.className='icon-btn'; copy.textContent='Copy';
-      copy.onclick = ()=>{ navigator.clipboard.writeText(`${entry.text} — ${entry.author||'Anonymous'}`); };
-
-      actions.appendChild(copy); actions.appendChild(del);
-      wrap.appendChild(content); wrap.appendChild(actions);
-      return wrap;
-    }
-
-    // ------------------ RENDER JOKES ------------------
-    async function renderJokes(){
-      jokeListEl.innerHTML = '';
-      const sortField = sortSelect.value==='rating' ? 'ratingSum' : 'time';
-      let q = db.collection('jokes');
-      if(sortField==='rating'){
-        try {
-          q = q.orderBy('ratingSum','desc').orderBy('time','desc');
-        } catch(e){
-          console.warn("Rating index missing. Showing newest first."); 
-          q = q.orderBy('time','desc');
-        }
-      } else {
-        q = q.orderBy('time','desc');
-      }
-      const snapshot = await q.get();
-      if(snapshot.empty){
-        const empty = document.createElement('div'); empty.className='empty'; empty.textContent='No entries yet.';
-        jokeListEl.appendChild(empty);
-        return;
-      }
-      snapshot.forEach(doc=>{
-        const data = doc.data();
-        const entry = {
-          id: doc.id,
-          author: data.author,
-          text: data.text,
-          time: data.time ? data.time.toDate() : new Date(),
-          ratingSum: data.ratingSum || 0,
-          ratingCount: data.ratingCount || 0
-        };
-        jokeListEl.appendChild(createJoke(entry));
+      // refresh star highlights for visible jokes
+      document.querySelectorAll('.joke').forEach(j => {
+        const id = j.dataset.id;
+        const starsDiv = j.querySelector('.stars');
+        const avgSpan = j.querySelector('.avg-text');
+        if (id && starsDiv && avgSpan) updateStarsUI(id, starsDiv, avgSpan);
+        // show/hide delete button
+        const del = j.querySelector('.delete-btn');
+        if (del) del.style.display = (currentUID === adminUID) ? 'inline-flex' : 'none';
       });
     }
+  });
 
-    sortSelect.addEventListener('change', renderJokes);
+  // Enable/disable submit & preview only when both auth ready and checkbox checked
+  function updateActionButtons(){
+    const ready = agreeCheckbox.checked && currentUID !== null;
+    submitBtn.disabled = !ready;
+    previewBtn.disabled = !ready;
+  }
+  agreeCheckbox.addEventListener('change', updateActionButtons);
 
-    // ------------------ SUBMIT HANDLER ------------------
-    submitBtn.addEventListener('click', async ()=>{
-      if(!agreeCheckbox.checked){ alert('Please confirm guidelines'); return; }
-      if(!currentUID){ alert('Auth not ready'); return; }
-      const text = jokeInput.value.trim();
-      if(!text) return;
-      try{
-        await db.collection('jokes').add({
-          author: authorInput.value.trim()||'Anonymous',
-          text: text,
-          time: firebase.firestore.FieldValue.serverTimestamp(),
-          ratingSum:0,
-          ratingCount:0
+  // Create DOM for a single joke
+  function createJokeNode(entry){
+    const wrap = document.createElement('article');
+    wrap.className = 'joke';
+    wrap.dataset.id = entry.id;
+
+    const content = document.createElement('div');
+    content.className = 'joke-content';
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    const who = document.createElement('div'); who.className = 'who'; who.textContent = entry.author || 'Anonymous';
+    const when = document.createElement('div'); when.className='time'; when.textContent = entry.time ? fmtTime(entry.time) : '';
+    meta.appendChild(who); meta.appendChild(when);
+
+    const text = document.createElement('div'); text.className='joke-text'; text.textContent = entry.text;
+
+    content.appendChild(meta);
+    content.appendChild(text);
+
+    // Rating row (stars left, avg text right)
+    const ratingRow = document.createElement('div'); ratingRow.className = 'rating-row';
+    const starsDiv = document.createElement('div'); starsDiv.className='stars';
+    // 5 stars
+    for(let v=1; v<=5; v++){
+      const sb = document.createElement('button');
+      sb.className = 'star-btn';
+      sb.innerText = '★';
+      sb.dataset.value = v;
+      sb.title = `${v} star${v>1?'s':''}`;
+      sb.addEventListener('click', (e) => {
+        e.preventDefault();
+        // ensure auth
+        if (!currentUID) {
+          auth.signInAnonymously().catch(err => { console.error('Auth failed', err); alert('Unable to authenticate for rating.'); });
+          // try again a moment later
+          setTimeout(()=> { if (currentUID) rateJoke(entry.id, v); }, 500);
+          return;
+        }
+        rateJoke(entry.id, v);
+      });
+      starsDiv.appendChild(sb);
+    }
+
+    const avgSpan = document.createElement('div'); avgSpan.className='avg-text';
+    avgSpan.textContent = `Rating: ${fmtAvg(entry.ratingAverage||0)} / 5 (${entry.ratingCount||0} votes)`;
+
+    ratingRow.appendChild(starsDiv);
+    ratingRow.appendChild(avgSpan);
+
+    content.appendChild(ratingRow);
+
+    // actions
+    const actions = document.createElement('div'); actions.className='joke-actions';
+    const copyBtn = document.createElement('button'); copyBtn.className='icon-btn'; copyBtn.textContent='Copy';
+    copyBtn.onclick = ()=> { navigator.clipboard.writeText(`${entry.text} — ${entry.author||'Anonymous'}`).catch(()=>{}); };
+
+    const delBtn = document.createElement('button'); delBtn.className='icon-btn delete-btn'; delBtn.textContent='Remove';
+    delBtn.style.display = (currentUID === adminUID) ? 'inline-flex' : 'none';
+    delBtn.onclick = ()=> {
+      if (!confirm('Remove this joke?')) return;
+      db.collection('jokes').doc(entry.id).delete().catch(err=>{ console.error('Delete failed', err); alert('Delete failed'); });
+    };
+
+    actions.appendChild(copyBtn);
+    actions.appendChild(delBtn);
+
+    wrap.appendChild(content);
+    wrap.appendChild(actions);
+
+    // after DOM in place, set star highlights based on user rating or average
+    updateStarsUI(entry.id, starsDiv, avgSpan);
+
+    return wrap;
+  }
+
+  // Update UI for stars: highlight user's rating if exists else highlight rounded average
+  function updateStarsUI(jokeId, starsDiv, avgSpan){
+    // fetch latest aggregates quickly
+    db.collection('jokes').doc(jokeId).get().then(jsnap=>{
+      const jd = jsnap.exists ? jsnap.data() : {};
+      const avg = jd.ratingAverage || 0;
+      const count = jd.ratingCount || 0;
+      avgSpan.textContent = `Rating: ${fmtAvg(avg)} / 5 (${count} votes)`;
+    }).catch(()=>{});
+
+    if (!currentUID) {
+      // highlight by average
+      db.collection('jokes').doc(jokeId).get().then(jsnap=>{
+        const jd = jsnap.exists ? jsnap.data() : {};
+        const avgRounded = Math.round(jd.ratingAverage || 0);
+        Array.from(starsDiv.children).forEach(btn => {
+          btn.classList.toggle('star-on', Number(btn.dataset.value) <= avgRounded);
         });
-        jokeInput.value=''; authorInput.value='';
-        renderJokes();
-      }catch(e){ console.error(e); alert('Failed to submit.'); }
-    });
+      }).catch(()=>{});
+      return;
+    }
 
-    previewBtn.addEventListener('click', ()=>{
-      const text = jokeInput.value.trim(); if(!text) return;
-      const entry = {id:'tmp',author:authorInput.value||'Preview',text:text,time:new Date(),ratingSum:0,ratingCount:0};
-      const el = createJoke(entry);
-      jokeListEl.insertBefore(el,jokeListEl.firstChild);
-      setTimeout(()=>{ if(el.parentNode) el.remove(); },3000);
-    });
+    // fetch user's rating
+    db.collection('jokes').doc(jokeId).collection('ratings').doc(currentUID).get().then(rsnap=>{
+      if (rsnap.exists) {
+        const ur = rsnap.data().rating;
+        Array.from(starsDiv.children).forEach(btn => {
+          btn.classList.toggle('star-on', Number(btn.dataset.value) <= ur);
+        });
+      } else {
+        // use average
+        db.collection('jokes').doc(jokeId).get().then(jsnap=>{
+          const jd = jsnap.exists ? jsnap.data() : {};
+          const avgRounded = Math.round(jd.ratingAverage || 0);
+          Array.from(starsDiv.children).forEach(btn => {
+            btn.classList.toggle('star-on', Number(btn.dataset.value) <= avgRounded);
+          });
+        }).catch(()=>{});
+      }
+    }).catch(()=>{});
+  }
 
-    // Initial render
-    updateActionButtons();
-    renderJokes();
-  </script>
+  // Rate a joke with transaction: per-user rating + update aggregates
+  function rateJoke(jokeId, newRating){
+    if (!currentUID) {
+      alert('Signing in... please try again in a moment.');
+      auth.signInAnonymously().catch(()=>{});
+      return;
+    }
+    const jokeRef = db.collection('jokes').doc(jokeId);
+    const userRef = jokeRef.collection('ratings').doc(currentUID);
+
+    db.runTransaction(async tx => {
+      const [jSnap, rSnap] = await Promise.all([tx.get(jokeRef), tx.get(userRef)]);
+      if (!jSnap.exists) throw new Error('Joke missing');
+      const jd = jSnap.data();
+      let ratingSum = jd.ratingSum || 0;
+      let ratingCount = jd.ratingCount || 0;
+      const prev = rSnap.exists ? (rSnap.data().rating || 0) : null;
+
+      if (prev === null) {
+        ratingSum = ratingSum + newRating;
+        ratingCount = ratingCount + 1;
+      } else {
+        ratingSum = ratingSum - prev + newRating;
+      }
+      const ratingAverage = ratingCount ? (ratingSum / ratingCount) : 0;
+
+      tx.set(userRef, { rating: newRating, uid: currentUID }, { merge: true });
+      tx.update(jokeRef, { ratingSum: ratingSum, ratingCount: ratingCount, ratingAverage: ratingAverage });
+    }).then(()=> {
+      // UI will update via snapshot or manual update
+    }).catch(err => {
+      console.error('Rating failed', err);
+      alert('Failed to save rating. Try again.');
+    });
+  }
+
+  // Subscription: try ratingAverage ordering, fallback to time if index missing
+  function subscribePrimary(){
+    if (unsubscribeCurrent) { unsubscribeCurrent(); unsubscribeCurrent = null; }
+    try {
+      const q = db.collection('jokes').orderBy('ratingAverage','desc').orderBy('time','desc');
+      unsubscribeCurrent = q.onSnapshot(snapshot => {
+        renderSnapshot(snapshot);
+      }, err => {
+        console.warn('Primary query failed, falling back to time ordering:', err);
+        subscribeTime();
+      });
+    } catch(e) {
+      console.warn('Primary subscribe error, fallback', e);
+      subscribeTime();
+    }
+  }
+  function subscribeTime(){
+    if (unsubscribeCurrent) { unsubscribeCurrent(); unsubscribeCurrent = null; }
+    const q = db.collection('jokes').orderBy('time','desc');
+    unsubscribeCurrent = q.onSnapshot(snapshot => {
+      renderSnapshot(snapshot);
+    }, err => {
+      console.error('Time query failed', err);
+      jokeListEl.innerHTML = '<div class="empty">Unable to load jokes.</div>';
+    });
+  }
+
+  // Render snapshot
+  function renderSnapshot(snapshot){
+    jokeListEl.innerHTML = '';
+    if (snapshot.empty){
+      jokeListEl.appendChild(Object.assign(document.createElement('div'),{className:'empty',textContent:'No entries yet — be the first to post.'}));
+      return;
+    }
+    snapshot.forEach(doc=>{
+      const d = doc.data();
+      const entry = {
+        id: doc.id,
+        author: d.author,
+        text: d.text,
+        time: d.time ? d.time.toDate() : null,
+        ratingSum: d.ratingSum || 0,
+        ratingCount: d.ratingCount || 0,
+        ratingAverage: d.ratingAverage || 0
+      };
+      jokeListEl.appendChild(createJokeNode(entry));
+    });
+  }
+
+  // Sorting control
+  sortSelect.addEventListener('change', ()=>{
+    if (sortSelect.value === 'time') subscribeTime();
+    else subscribePrimary();
+  });
+
+  // Add new joke (waits for auth & checkbox)
+  submitBtn.addEventListener('click', async ()=>{
+    if (!agreeCheckbox.checked){ alert('Please agree to the community guidelines.'); return; }
+    if (!currentUID){ alert('Signing in... please wait a moment and try again.'); return; }
+    const text = jokeInput.value.trim();
+    if(!text) return;
+    try {
+      await db.collection('jokes').add({
+        author: authorInput.value.trim() || 'Anonymous',
+        text: text,
+        time: firebase.firestore.FieldValue.serverTimestamp(),
+        ratingSum: 0,
+        ratingCount: 0,
+        ratingAverage: 0
+      });
+      jokeInput.value=''; authorInput.value='';
+      // snapshot listener will show new joke
+    } catch(err){
+      console.error('Add failed', err);
+      alert('Failed to submit. Please try again.');
+    }
+  });
+
+  previewBtn.addEventListener('click', ()=>{
+    if (!agreeCheckbox.checked){ alert('Please agree to the community guidelines.'); return; }
+    const text = jokeInput.value.trim(); if (!text) return;
+    const tmp = { id:'tmp', author: authorInput.value || 'You (preview)', text: text, time: new Date(), ratingSum:0, ratingCount:0, ratingAverage:0 };
+    const el = createJokeNode(tmp);
+    jokeListEl.insertBefore(el, jokeListEl.firstChild);
+    setTimeout(()=>{ if(el.parentNode) el.remove(); }, 3000);
+  });
+
+  // Kick off
+  // Start with selected sort
+  if (sortSelect.value === 'time') subscribeTime(); else subscribePrimary();
+
+  // Optional: expose currentUID for debugging
+  window.__LOHS = { getCurrentUID: () => currentUID };
+</script>
 </body>
 </html>
