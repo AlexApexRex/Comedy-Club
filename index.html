@@ -487,7 +487,7 @@
     };
 
     // Store only a SHA-256 hash (not plain text). Generate your own with: await crypto.subtle.digest("SHA-256", new TextEncoder().encode("your-pass"))
-    const OVERSEER_PASSCODE_HASH = "9f53f8ab4f2f72b378e7f3fd204cb679cbf773eb31df185739f82f220cc81f1f";
+    const OVERSEER_PASSCODE_HASH = "e5bedce65d8349e689a0ce8578412b34b78669965aa073a3677f2ed8c6d4f6fe";
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
@@ -1147,3 +1147,4 @@
   </script>
 </body>
 </html>
+
