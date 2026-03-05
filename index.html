@@ -3,473 +3,6 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <meta name="description" content=" LOHS Comedy Appreciation Club — Share enjoyable moments." />
-  <title>LOHS Comedy Appreciation Club — Share Joy</title>
-
-  <!-- Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:wght@500;700&display=swap" rel="stylesheet">
-
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
-  <style>
-    :root{
-      --bg-outer: #e8e8e8;
-      --bg-inner: #ffffff;
-      --muted: #6b6b6b;
-      --text: #212121;
-      --accent: #b0894b;
-      --accent-2: #d6c4a1;
-      --radius: 12px;
-      --shadow-1: 0 6px 20px rgba(20,20,20,0.06);
-      --shadow-2: 0 2px 6px rgba(20,20,20,0.06);
-    }
-
-    html, body {height: 100%; margin: 0; padding: 0;}
-    body{
-      margin:0;
-      background: linear-gradient(180deg, var(--bg-outer) 0%, #f7f7f7 100%);
-      color: var(--text);
-      font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-      display: flex;
-      justify-content: center;
-      padding: 48px 20px;
-    }
-
-    .container{
-      width:100%;
-      max-width:1024px;
-      min-height: 600px;
-    }
-
-    header{
-      display:flex;
-      gap:20px;
-      align-items:center;
-      margin-bottom:36px;
-    }
-
-    .brand h1{
-      margin:0;
-      font-family: "Playfair Display", serif;
-      font-size:28px;
-      color: var(--text);
-      font-weight:600;
-    }
-
-    .brand p{
-      margin:0;
-      color:var(--muted);
-      font-size:14px;
-    }
-
-    .card{
-      background: var(--bg-inner);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-1);
-      padding:40px;
-    }
-
-    .intro{
-      display:flex;
-      gap:24px;
-      align-items:center;
-      margin-bottom:24px;
-    }
-
-    .intro h2{
-      margin:0;
-      font-family:"Playfair Display", serif;
-      font-size:22px;
-      color:var(--text);
-      font-weight:600;
-    }
-
-    .intro p{
-      margin:6px 0 0 0;
-      color:var(--muted);
-      font-size:14px;
-    }
-
-    /* Form */
-    form.joke-form{
-      display:flex;
-      flex-direction: column;
-      gap:12px;
-      margin-top:18px;
-      margin-bottom:18px;
-    }
-
-    .field {
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      width:100%;
-    }
-
-    input[type="text"], textarea {
-      width:100%;
-      padding:14px 16px;
-      border-radius:10px;
-      border:1px solid rgba(0,0,0,0.06);
-      background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(248,247,246,0.95));
-      font-size:15px;
-      color:var(--text);
-      resize: vertical;
-      min-height:50px;
-      box-shadow: var(--shadow-2);
-    }
-
-    .form-actions{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      justify-content:flex-end;
-    }
-
-    button{
-      font-family: "Inter", sans-serif;
-      font-weight:600;
-      font-size:14px;
-      padding:10px 16px;
-      border-radius:8px;
-      border:none;
-      cursor:pointer;
-      transition: all 180ms ease;
-    }
-
-    #submitBtn{
-      background: var(--accent);
-      color:white;
-    }
-    #submitBtn:hover{opacity:0.9;transform:translateY(-2px);}
-    #previewBtn{
-      background: var(--accent-2);
-      color:#222;
-    }
-    #previewBtn:hover{opacity:0.9;transform:translateY(-2px);}
-
-    /* Joke list */
-    .joke-list{
-      margin-top:12px;
-      display:flex;
-      flex-direction:column;
-      gap:12px;
-    }
-
-    .joke {
-      display:flex;
-      gap:16px;
-      align-items:flex-start;
-      padding:18px;
-      border-radius:12px;
-      background: linear-gradient(180deg, var(--bg-inner), #fdfcfb);
-      border: 1px solid rgba(0,0,0,0.04);
-      box-shadow: var(--shadow-2);
-      position:relative;
-    }
-
-    .joke::before{
-      content:"";
-      position:absolute;
-      left:0;
-      top:0;
-      bottom:0;
-      width:6px;
-      border-top-left-radius:12px;
-      border-bottom-left-radius:12px;
-      background: linear-gradient(180deg, var(--accent), var(--accent-2));
-    }
-
-    .joke-content{
-      flex:1;
-    }
-
-    .meta{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      margin-bottom:6px;
-    }
-
-    .meta .who{
-      font-weight:700;
-      font-size:13px;
-      color:var(--text);
-    }
-
-    .meta .time{
-      font-size:12px;
-      color:var(--muted);
-    }
-
-    .joke-text{
-      font-size:15px;
-      color:var(--text);
-      line-height:1.5;
-      white-space:pre-wrap;
-    }
-
-    .joke-actions{
-      display:flex;
-      flex-direction:column;
-      gap:8px;
-      align-items:flex-end;
-    }
-
-    .icon-btn {
-      background:transparent;
-      border:none;
-      cursor:pointer;
-      padding:6px 8px;
-      font-size:13px;
-      color:var(--muted);
-      border-radius:8px;
-      transition:all 160ms ease;
-    }
-
-    .icon-btn:hover{
-      color:var(--text);
-      background:rgba(0,0,0,0.03);
-      transform:translateY(-2px);
-    }
-
-    .empty {
-      padding:28px;
-      border-radius:10px;
-      background:linear-gradient(180deg, rgba(255,255,255,0.8), rgba(250,249,247,0.8));
-      text-align:center;
-      color:var(--muted);
-      font-size:15px;
-      border:1px dashed rgba(0,0,0,0.04);
-    }
-
-    /* Modal styles */
-    .modal-overlay{
-      position: fixed;
-      top:0; left:0;
-      width:100%; height:100%;
-      background: rgba(0,0,0,0.4);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-
-    .modal-content{
-      background: var(--bg-inner);
-      padding: 24px 32px;
-      border-radius: 12px;
-      box-shadow: var(--shadow-1);
-      max-width: 500px;
-      width: 90%;
-      pointer-events: auto;
-      position: relative;
-      z-index: 1001;
-    }
-
-    .modal-content h3{
-      margin-top:0;
-      font-family: "Playfair Display", serif;
-      font-size: 20px;
-    }
-
-    .modal-content p{
-      font-size: 14px;
-      color: var(--muted);
-    }
-
-    .modal-content label{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      cursor: pointer;
-      margin-top: 16px;
-      font-size: 14px;
-    }
-
-    .modal-content input[type="checkbox"]{
-      width: 16px;
-      height: 16px;
-    }
-
-    .modal-content button{
-      margin-top: 16px;
-      background: var(--accent);
-      color: white;
-      font-weight:600;
-      border-radius:8px;
-      padding:10px 16px;
-    }
-
-  </style>
-</head>
-<body>
-  <div class="container">
-    <header class="brand">
-      <div>
-        <h1>LOHS Comedy Appreciation Club</h1>
-        <p>Refined joy-sharing website — share enjoyable content</p>
-      </div>
-    </header>
-
-    <main class="card" role="main" aria-labelledby="page-title">
-      <div class="intro">
-        <div class="title">
-          <h2 id="page-title">Share Joy-</h2>
-          <p class="small">Post a link that contains enjoyable content that you would like to share; it should be school-appropriate and non-offensive; no hate is allowed in Comedy Appreciation Club.</p>
-        </div>
-      </div>
-
-      <form class="joke-form" id="jokeForm" onsubmit="return false;">
-        <div class="field">
-          <label for="author">Name (optional)</label>
-          <input id="author" type="text" placeholder="Your name (or leave blank for Anonymous)" maxlength="40" />
-        </div>
-
-        <div class="field">
-          <label for="joke">Your Link</label>
-          <textarea id="joke" placeholder="Paste your link here…" maxlength="800" disabled></textarea>
-        </div>
-
-        <div class="form-actions">
-          <button type="button" id="previewBtn" disabled>Preview</button>
-          <button type="submit" id="submitBtn" disabled>Submit</button>
-        </div>
-      </form>
-
-      <div id="jokeListArea">
-        <div id="jokeList" class="joke-list" aria-live="polite"></div>
-      </div>
-    </main>
-  </div>
-
-  <!-- Modal -->
-  <div id="guidelinesModal" class="modal-overlay">
-    <div class="modal-content">
-      <h3>Community Guidelines</h3>
-      <p>Please read the rules carefully. All shared content should be school-appropriate. Submissions containing offensive content will be removed, and repeated violations may result in account suspension or reporting.</p>
-      <label>
-        <input type="checkbox" id="agreeCheckbox">
-        I have read and agree to the Club guidelines.
-      </label>
-      <button id="agreeBtn">Continue</button>
-    </div>
-  </div>
-
-  <script>
-    // Firebase setup
-    const firebaseConfig = {
-      apiKey: "AIzaSyBWNQ1vM2Ki4ReBCOrrCD8fC1iVhwlsX8",
-      authDomain: "comedy-club-alpha.firebaseapp.com",
-      projectId: "comedy-club-alpha",
-      storageBucket: "comedy-club-alpha.firebasestorage.app",
-      messagingSenderId: "251530882249",
-      appId: "1:251530882249:web:4b5c1aa8e2de9273a0b118",
-      measurementId: "G-JZXQ7ZXQ7M"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-
-    const jokeListEl = document.getElementById('jokeList');
-    const jokeInput = document.getElementById('joke');
-    const authorInput = document.getElementById('author');
-    const submitBtn = document.getElementById('submitBtn');
-    const previewBtn = document.getElementById('previewBtn');
-
-    // Modal and checkbox
-    const modal = document.getElementById('guidelinesModal');
-    const agreeCheckbox = document.getElementById('agreeCheckbox');
-    const agreeBtn = document.getElementById('agreeBtn');
-
-    // Disable form until user agrees
-    function enableForm() {
-      jokeInput.disabled = false;
-      submitBtn.disabled = false;
-      previewBtn.disabled = false;
-    }
-
-    agreeBtn.addEventListener('click', () => {
-      if(agreeCheckbox.checked){
-        modal.style.display = 'none';
-        enableForm();
-      } else {
-        alert("You must agree to the Community Guidelines to submit jokes.");
-      }
-    });
-
-    // Timestamp helpers
-    function ts(){return new Date();}
-    function fmtTime(d){return d.toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});}
-    function createJoke(entry){
-      const wrap=document.createElement('article'); wrap.className='joke'; wrap.dataset.id=entry.id;
-      const content=document.createElement('div'); content.className='joke-content';
-      const meta=document.createElement('div'); meta.className='meta';
-      const who=document.createElement('div'); who.className='who'; who.textContent=entry.author||'Anonymous';
-      const time=document.createElement('div'); time.className='time'; time.textContent=fmtTime(entry.time);
-      meta.appendChild(who); meta.appendChild(time);
-      const text=document.createElement('div'); text.className='joke-text'; text.textContent=entry.text;
-      content.appendChild(meta); content.appendChild(text);
-      const actions=document.createElement('div'); actions.className='joke-actions';
-      const del=document.createElement('button'); del.className='icon-btn'; del.innerHTML='Remove';
-      del.onclick=()=>{db.collection('jokes').doc(entry.id).delete();};
-      const copy=document.createElement('button'); copy.className='icon-btn'; copy.innerHTML='Copy';
-      copy.onclick=()=>{navigator.clipboard.writeText(`${entry.text} — ${entry.author||'Anonymous'}`).then(()=>{copy.textContent='Copied'; setTimeout(()=>copy.textContent='Copy',1200);});};
-      actions.appendChild(copy); actions.appendChild(del);
-      wrap.appendChild(content); wrap.appendChild(actions);
-      return wrap;
-    }
-
-    function renderJokes(){
-      db.collection("jokes").orderBy("time","desc").onSnapshot(snapshot=>{
-        jokeListEl.innerHTML='';
-        if(snapshot.empty){
-          const empty = document.createElement('div');
-          empty.className='empty';
-          empty.textContent='No entries yet — be the first to post a tasteful one-liner.';
-          jokeListEl.appendChild(empty);
-          return;
-        }
-        snapshot.forEach(doc=>{
-          const data = doc.data();
-          const entry = {id:doc.id, author:data.author, text:data.text, time:data.time ? data.time.toDate() : new Date()};
-          jokeListEl.appendChild(createJoke(entry));
-        });
-      });
-    }
-
-    submitBtn.addEventListener('click',()=>{
-      const text=jokeInput.value.trim();
-      if(!text) return;
-      db.collection("jokes").add({
-        author: authorInput.value.trim() || "Anonymous",
-        text: text,
-        time: firebase.firestore.FieldValue.serverTimestamp()
-      });
-      jokeInput.value=''; authorInput.value='';
-    });
-
-    previewBtn.addEventListener('click',()=>{
-      const text=jokeInput.value.trim();
-      if(!text) return;
-      const entry={id:'tmp',author:authorInput.value||'You (preview)',text:text,time:new Date()};
-      const el=createJoke(entry);
-      jokeListEl.insertBefore(el,jokeListEl.firstChild);
-      setTimeout(()=>{if(el.parentNode) el.remove();},3000);
-    });
-
-    renderJokes();
-  </script>
-</body>
-</html>
-
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <meta name="description" content="LOHS Comedy Appreciation Club — Share fun, school-appropriate links for club meetings." />
   <title>LOHS Comedy Appreciation Club — Link Board</title>
 
@@ -778,6 +311,7 @@
     const db = firebase.firestore();
 
     const linksRef = db.collection("links");
+    const legacyJokesRef = db.collection("jokes");
 
     const linkListEl = document.getElementById("linkList");
     const authorInput = document.getElementById("author");
@@ -913,7 +447,14 @@
       const delBtn = document.createElement("button");
       delBtn.className = "icon-btn";
       delBtn.textContent = "Remove";
-      delBtn.onclick = () => linksRef.doc(entry.id).delete();
+      delBtn.onclick = () => {
+        const src = entry.source || "links";
+        const ref = src === "jokes" ? legacyJokesRef : linksRef;
+        ref.doc(entry.id).delete().catch((error) => {
+          console.error(error);
+          setStatus("Could not remove link right now.", true);
+        });
+      };
 
       actions.append(openBtn, copyBtn, delBtn);
       card.append(main, actions);
@@ -942,27 +483,45 @@
       setStatus("You can now submit links.");
     });
 
+    function renderSnapshot(snapshot, source) {
+      linkListEl.innerHTML = "";
+      if (snapshot.empty) {
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "No links yet — be the first to share something fun for the next meeting.";
+        linkListEl.appendChild(empty);
+        return;
+      }
+
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const rawUrl = data.url || data.text || "";
+        const normalized = normalizeUrl(rawUrl);
+        if (!normalized) return;
+
+        const entry = {
+          id: doc.id,
+          author: data.author,
+          title: data.title || data.caption || "",
+          url: normalized,
+          source,
+          time: data.time ? data.time.toDate() : new Date()
+        };
+        linkListEl.appendChild(createLinkCard(entry));
+      });
+    }
+
     function renderLinks() {
       linksRef.orderBy("time", "desc").onSnapshot((snapshot) => {
-        linkListEl.innerHTML = "";
-        if (snapshot.empty) {
-          const empty = document.createElement("div");
-          empty.className = "empty";
-          empty.textContent = "No links yet — be the first to share something fun for the next meeting.";
-          linkListEl.appendChild(empty);
-          return;
-        }
-
-        snapshot.forEach((doc) => {
-          const data = doc.data();
-          const entry = {
-            id: doc.id,
-            author: data.author,
-            title: data.title,
-            url: data.url,
-            time: data.time ? data.time.toDate() : new Date()
-          };
-          linkListEl.appendChild(createLinkCard(entry));
+        renderSnapshot(snapshot, "links");
+      }, (error) => {
+        console.error("links collection listener failed", error);
+        setStatus("Using compatibility mode. Showing entries from legacy storage.");
+        legacyJokesRef.orderBy("time", "desc").onSnapshot((legacySnapshot) => {
+          renderSnapshot(legacySnapshot, "jokes");
+        }, (legacyError) => {
+          console.error("legacy jokes collection listener failed", legacyError);
+          setStatus("Could not load links. Check Firestore rules for links/jokes collections.", true);
         });
       });
     }
@@ -974,22 +533,37 @@
         return;
       }
 
-      try {
-        await linksRef.add({
-          author: authorInput.value.trim() || "Anonymous",
-          title: titleInput.value.trim() || "",
-          url,
-          time: firebase.firestore.FieldValue.serverTimestamp()
-        });
+      const payload = {
+        author: authorInput.value.trim() || "Anonymous",
+        title: titleInput.value.trim() || "",
+        url,
+        time: firebase.firestore.FieldValue.serverTimestamp()
+      };
 
-        authorInput.value = "";
-        titleInput.value = "";
-        urlInput.value = "";
-        setStatus("Link submitted. Thanks for sharing!");
+      try {
+        await linksRef.add(payload);
       } catch (error) {
-        console.error(error);
-        setStatus("Could not save right now. Please try again.", true);
+        console.error("write to links failed", error);
+        try {
+          await legacyJokesRef.add({
+            author: payload.author,
+            title: payload.title,
+            text: payload.url,
+            url: payload.url,
+            time: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          setStatus("Saved to compatibility storage (jokes collection).", false);
+        } catch (legacyError) {
+          console.error("write to jokes failed", legacyError);
+          setStatus("Could not save. Please check Firestore write rules for links/jokes.", true);
+          return;
+        }
       }
+
+      authorInput.value = "";
+      titleInput.value = "";
+      urlInput.value = "";
+      setStatus("Link submitted. Thanks for sharing!");
     });
 
     previewBtn.addEventListener("click", () => {
