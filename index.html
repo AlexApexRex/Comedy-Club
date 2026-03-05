@@ -173,10 +173,7 @@
     #previewBtn { background: var(--accent-2); color: #2b2112; }
 
     .status {
-      min-height: 18px;
-      color: var(--muted);
-      font-size: 13px;
-      margin-top: -4px;
+      display: none;
     }
 
     .status.error { color: var(--danger); }
@@ -373,6 +370,67 @@
       background: linear-gradient(180deg, rgba(255,255,255,0.9), rgba(250,250,250,0.9));
     }
 
+
+    .toast-container {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2200;
+      display: grid;
+      gap: 8px;
+      width: min(560px, calc(100vw - 24px));
+      pointer-events: none;
+    }
+
+    .toast {
+      pointer-events: auto;
+      border-radius: 12px;
+      padding: 11px 14px;
+      box-shadow: var(--shadow-1);
+      border: 1px solid rgba(0,0,0,0.08);
+      background: #fff;
+      color: var(--text);
+      font-size: 14px;
+      animation: toastIn 220ms ease;
+    }
+
+    .toast.ok { border-left: 6px solid var(--ok); }
+    .toast.error { border-left: 6px solid var(--danger); }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .popup-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.42);
+      display: grid;
+      place-items: center;
+      z-index: 2300;
+      padding: 16px;
+    }
+
+    .popup-card {
+      width: min(460px, 96vw);
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: var(--shadow-1);
+      padding: 18px;
+    }
+
+    .popup-card h3 { margin: 0 0 8px; }
+    .popup-card p { margin: 0 0 10px; color: var(--muted); }
+    .popup-input { margin-bottom: 12px; }
+
+    .popup-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
     .modal-overlay {
       position: fixed;
       inset: 0;
@@ -413,7 +471,6 @@
       </div>
       <div class="top-actions">
         <span class="pill" id="identityPill">Local member profile ready</span>
-        <span class="pill">Moderator tools hidden</span>
         <label class="pill" for="sortSelect">Sort</label>
         <select id="sortSelect" class="sort-select">
           <option value="newest">Newest first</option>
@@ -475,6 +532,20 @@
     </div>
   </div>
 
+  <div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <div id="popupOverlay" class="popup-overlay" hidden>
+    <div class="popup-card" role="dialog" aria-modal="true" aria-labelledby="popupTitle">
+      <h3 id="popupTitle">Notice</h3>
+      <p id="popupMessage"></p>
+      <input id="popupInput" class="popup-input" type="password" hidden />
+      <div class="popup-actions">
+        <button id="popupCancelBtn" class="icon-btn" type="button">Cancel</button>
+        <button id="popupOkBtn" type="button">OK</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyBWNQ1vM2Ki4ReBCOrrCD8fC1iVhwlsX8",
@@ -487,7 +558,7 @@
     };
 
     // Store only a SHA-256 hash (not plain text). Generate your own with: await crypto.subtle.digest("SHA-256", new TextEncoder().encode("your-pass"))
-    const OVERSEER_PASSCODE_HASH = "e5bedce65d8349e689a0ce8578412b34b78669965aa073a3677f2ed8c6d4f6fe";
+    const OVERSEER_PASSCODE_HASH = "9f53f8ab4f2f72b378e7f3fd204cb679cbf773eb31df185739f82f220cc81f1f";
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
@@ -503,6 +574,13 @@
     const previewBtn = document.getElementById("previewBtn");
     const statusMsg = document.getElementById("statusMsg");
     const identityPill = document.getElementById("identityPill");
+    const toastContainer = document.getElementById("toastContainer");
+    const popupOverlay = document.getElementById("popupOverlay");
+    const popupTitle = document.getElementById("popupTitle");
+    const popupMessage = document.getElementById("popupMessage");
+    const popupInput = document.getElementById("popupInput");
+    const popupOkBtn = document.getElementById("popupOkBtn");
+    const popupCancelBtn = document.getElementById("popupCancelBtn");
     const sortSelect = document.getElementById("sortSelect");
     const logoEl = document.querySelector(".logo");
 
@@ -530,6 +608,46 @@
       return generated;
     }
 
+    function showToast(message, variant = "ok") {
+      const toast = document.createElement("div");
+      toast.className = `toast ${variant}`;
+      toast.textContent = message;
+      toastContainer.appendChild(toast);
+      setTimeout(() => {
+        toast.remove();
+      }, 2800);
+    }
+
+    function showPopup({ title = "Notice", message = "", input = false, okText = "OK", cancelText = "Cancel" }) {
+      return new Promise((resolve) => {
+        popupTitle.textContent = title;
+        popupMessage.textContent = message;
+        popupInput.hidden = !input;
+        popupInput.value = "";
+        popupOkBtn.textContent = okText;
+        popupCancelBtn.textContent = cancelText;
+        popupCancelBtn.hidden = false;
+        popupOverlay.hidden = false;
+
+        const cleanup = () => {
+          popupOverlay.hidden = true;
+          popupOkBtn.onclick = null;
+          popupCancelBtn.onclick = null;
+        };
+
+        popupOkBtn.onclick = () => {
+          const val = input ? popupInput.value : true;
+          cleanup();
+          resolve(val);
+        };
+
+        popupCancelBtn.onclick = () => {
+          cleanup();
+          resolve(null);
+        };
+      });
+    }
+
     async function sha256Hex(value) {
       const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
       return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
@@ -545,7 +663,7 @@
         return;
       }
 
-      const input = prompt("Overseer passcode:");
+      const input = await showPopup({ title: "Overseer Access", message: "Enter overseer passcode.", input: true, okText: "Unlock" });
       if (input === null) return;
 
       try {
@@ -962,8 +1080,9 @@
         const delBtn = document.createElement("button");
         delBtn.className = "icon-btn danger-btn";
         delBtn.textContent = "Remove";
-        delBtn.onclick = () => {
-          if (!confirm("Delete this post? This cannot be undone.")) return;
+        delBtn.onclick = async () => {
+          const approved = await showPopup({ title: "Delete Post", message: "Delete this post? This cannot be undone.", okText: "Delete" });
+          if (!approved) return;
           getDocRef(entry).delete().catch((error) => {
             console.error(error);
             setStatus("Could not remove post right now.", true);
@@ -981,6 +1100,7 @@
       statusMsg.classList.remove("error", "ok");
       if (isError) statusMsg.classList.add("error");
       if (isOk) statusMsg.classList.add("ok");
+      if (message) showToast(message, isError ? "error" : "ok");
     }
 
     function enableForm() {
@@ -992,7 +1112,7 @@
 
     agreeBtn.addEventListener("click", () => {
       if (!agreeCheckbox.checked) {
-        alert("You must agree to the guidelines before submitting links.");
+        showToast("You must agree to the guidelines before submitting links.", "error");
         return;
       }
       modal.style.display = "none";
@@ -1147,4 +1267,3 @@
   </script>
 </body>
 </html>
-
