@@ -94,18 +94,15 @@
       color: var(--muted);
     }
 
-    .overseer-btn {
+    .sort-select {
       border: 1px solid rgba(0,0,0,0.15);
       border-radius: 999px;
       background: #fff;
       padding: 8px 12px;
       font-size: 12px;
+      color: var(--text);
       cursor: pointer;
-      transition: all 160ms ease;
     }
-
-    .overseer-btn:hover { transform: translateY(-1px); box-shadow: var(--shadow-2); }
-    .overseer-btn.active { background: #121212; color: #fff; border-color: #121212; }
 
     .card {
       background: var(--bg-inner);
@@ -416,7 +413,13 @@
       </div>
       <div class="top-actions">
         <span class="pill" id="identityPill">Local member profile ready</span>
-        <button class="overseer-btn" id="overseerBtn" type="button">Enable Overseer Mode</button>
+        <span class="pill">Moderator tools hidden</span>
+        <label class="pill" for="sortSelect">Sort</label>
+        <select id="sortSelect" class="sort-select">
+          <option value="newest">Newest first</option>
+          <option value="oldest">Oldest first</option>
+          <option value="most-viewed">Most viewed</option>
+        </select>
       </div>
     </header>
 
@@ -483,8 +486,8 @@
       measurementId: "G-JZXQ7ZXQ7M"
     };
 
-    // NOTE: This passcode is client-side and not true security. Change it to your own secret.
-    const OVERSEER_PASSCODE = "LOHS-CLUB-ADMIN";
+    // Store only a SHA-256 hash (not plain text). Generate your own with: await crypto.subtle.digest("SHA-256", new TextEncoder().encode("your-pass"))
+    const OVERSEER_PASSCODE_HASH = "9f53f8ab4f2f72b378e7f3fd204cb679cbf773eb31df185739f82f220cc81f1f";
 
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
@@ -499,8 +502,9 @@
     const submitBtn = document.getElementById("submitBtn");
     const previewBtn = document.getElementById("previewBtn");
     const statusMsg = document.getElementById("statusMsg");
-    const overseerBtn = document.getElementById("overseerBtn");
     const identityPill = document.getElementById("identityPill");
+    const sortSelect = document.getElementById("sortSelect");
+    const logoEl = document.querySelector(".logo");
 
     const modal = document.getElementById("guidelinesModal");
     const agreeCheckbox = document.getElementById("agreeCheckbox");
@@ -510,6 +514,9 @@
 
     const currentUserId = getOrCreateLocalUserId();
     let isOverseer = localStorage.getItem("club_overseer_mode") === "1";
+    let currentSort = localStorage.getItem("club_sort_mode") || "newest";
+    let logoClickCount = 0;
+    let logoClickTimer = null;
     refreshIdentityUI();
 
     function getOrCreateLocalUserId() {
@@ -523,14 +530,12 @@
       return generated;
     }
 
-    function refreshIdentityUI() {
-      const shortId = currentUserId.slice(0, 8);
-      identityPill.textContent = `Local member ID: ${shortId}…`;
-      overseerBtn.classList.toggle("active", isOverseer);
-      overseerBtn.textContent = isOverseer ? "Overseer Mode Enabled" : "Enable Overseer Mode";
+    async function sha256Hex(value) {
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
     }
 
-    overseerBtn.addEventListener("click", () => {
+    async function requestOverseerAccess() {
       if (isOverseer) {
         isOverseer = false;
         localStorage.removeItem("club_overseer_mode");
@@ -539,16 +544,57 @@
         setStatus("Overseer mode disabled.", false, true);
         return;
       }
-      const input = prompt("Enter overseer passcode:");
-      if (input === OVERSEER_PASSCODE) {
-        isOverseer = true;
-        localStorage.setItem("club_overseer_mode", "1");
-        refreshIdentityUI();
-        renderLinks();
-        setStatus("Overseer mode enabled. You can moderate all posts.", false, true);
-      } else if (input !== null) {
-        setStatus("Incorrect overseer passcode.", true);
+
+      const input = prompt("Overseer passcode:");
+      if (input === null) return;
+
+      try {
+        const hash = await sha256Hex(input.trim());
+        if (hash === OVERSEER_PASSCODE_HASH) {
+          isOverseer = true;
+          localStorage.setItem("club_overseer_mode", "1");
+          refreshIdentityUI();
+          renderLinks();
+          setStatus("Overseer mode enabled.", false, true);
+        } else {
+          setStatus("Incorrect overseer passcode.", true);
+        }
+      } catch (error) {
+        console.error(error);
+        setStatus("Could not verify passcode in this browser.", true);
       }
+    }
+
+    function refreshIdentityUI() {
+      const shortId = currentUserId.slice(0, 8);
+      identityPill.textContent = `Local member ID: ${shortId}…${isOverseer ? " • Overseer" : ""}`;
+      sortSelect.value = currentSort;
+    }
+
+    document.addEventListener("keydown", (event) => {
+      if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "o") {
+        event.preventDefault();
+        requestOverseerAccess();
+      }
+    });
+
+    logoEl.addEventListener("click", () => {
+      logoClickCount += 1;
+      clearTimeout(logoClickTimer);
+      logoClickTimer = setTimeout(() => {
+        logoClickCount = 0;
+      }, 1500);
+
+      if (logoClickCount >= 5) {
+        logoClickCount = 0;
+        requestOverseerAccess();
+      }
+    });
+
+    sortSelect.addEventListener("change", () => {
+      currentSort = sortSelect.value;
+      localStorage.setItem("club_sort_mode", currentSort);
+      renderLinks();
     });
 
     function fmtTime(d) {
@@ -859,6 +905,13 @@
       }
       meta.append(tag);
 
+      if (!entry.preview) {
+        const viewsBadge = document.createElement("span");
+        viewsBadge.className = "badge";
+        viewsBadge.textContent = `${Number(entry.viewCount || 0)} views`;
+        meta.append(viewsBadge);
+      }
+
       const title = document.createElement("p");
       title.className = "link-title";
       title.textContent = entry.title || "Untitled shared link";
@@ -878,7 +931,21 @@
       const openBtn = document.createElement("button");
       openBtn.className = "icon-btn";
       openBtn.textContent = "Open Link";
-      openBtn.onclick = () => window.open(entry.url, "_blank", "noopener");
+      openBtn.onclick = async () => {
+        window.open(entry.url, "_blank", "noopener");
+        if (entry.preview) return;
+        try {
+          const ref = getDocRef(entry);
+          await db.runTransaction(async (tx) => {
+            const snap = await tx.get(ref);
+            if (!snap.exists) return;
+            const currentViews = Number((snap.data() || {}).viewCount || 0);
+            tx.update(ref, { viewCount: currentViews + 1 });
+          });
+        } catch (error) {
+          console.error("view count update failed", error);
+        }
+      };
 
       const copyBtn = document.createElement("button");
       copyBtn.className = "icon-btn";
@@ -933,6 +1000,17 @@
       setStatus("You can now submit links.", false, true);
     });
 
+
+    function sortEntries(entries) {
+      if (currentSort === "oldest") {
+        return entries.sort((a, b) => a.time - b.time);
+      }
+      if (currentSort === "most-viewed") {
+        return entries.sort((a, b) => (Number(b.viewCount || 0) - Number(a.viewCount || 0)) || (b.time - a.time));
+      }
+      return entries.sort((a, b) => b.time - a.time);
+    }
+
     function renderSnapshot(snapshot, source) {
       linkListEl.innerHTML = "";
       if (snapshot.empty) {
@@ -943,13 +1021,14 @@
         return;
       }
 
+      const entries = [];
       snapshot.forEach((doc) => {
         const data = doc.data();
         const rawUrl = data.url || data.text || "";
         const normalized = normalizeUrl(rawUrl);
         if (!normalized) return;
 
-        const entry = {
+        entries.push({
           id: doc.id,
           author: data.author,
           title: data.title || data.caption || "",
@@ -958,8 +1037,12 @@
           ownerId: data.ownerId || "",
           ratingSum: data.ratingSum || 0,
           ratingCount: data.ratingCount || 0,
+          viewCount: Number(data.viewCount || 0),
           time: data.time ? data.time.toDate() : new Date()
-        };
+        });
+      });
+
+      sortEntries(entries).forEach((entry) => {
         linkListEl.appendChild(createLinkCard(entry));
       });
     }
@@ -969,13 +1052,13 @@
     function renderLinks() {
       if (unsubscribeActive) unsubscribeActive();
 
-      unsubscribeActive = linksRef.orderBy("time", "desc").onSnapshot((snapshot) => {
+      unsubscribeActive = linksRef.onSnapshot((snapshot) => {
         renderSnapshot(snapshot, "links");
       }, (error) => {
         console.error("links collection listener failed", error);
         setStatus("Using compatibility mode. Showing entries from legacy storage.", false, true);
         if (unsubscribeActive) unsubscribeActive();
-        unsubscribeActive = legacyJokesRef.orderBy("time", "desc").onSnapshot((legacySnapshot) => {
+        unsubscribeActive = legacyJokesRef.onSnapshot((legacySnapshot) => {
           renderSnapshot(legacySnapshot, "jokes");
         }, (legacyError) => {
           console.error("legacy jokes collection listener failed", legacyError);
@@ -998,6 +1081,7 @@
         ownerId: currentUserId,
         ratingSum: 0,
         ratingCount: 0,
+        viewCount: 0,
         time: firebase.firestore.FieldValue.serverTimestamp()
       };
 
@@ -1014,6 +1098,7 @@
             ownerId: payload.ownerId,
             ratingSum: 0,
             ratingCount: 0,
+            viewCount: 0,
             time: firebase.firestore.FieldValue.serverTimestamp()
           });
           setStatus("Saved to compatibility storage (jokes collection).", false, true);
