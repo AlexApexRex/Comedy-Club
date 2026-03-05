@@ -403,6 +403,8 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
+    .popup-overlay[hidden] { display: none !important; }
+
     .popup-overlay {
       position: fixed;
       inset: 0;
@@ -477,6 +479,7 @@
           <option value="oldest">Oldest first</option>
           <option value="most-viewed">Most viewed</option>
         </select>
+        <button id="disableOverseerBtn" class="icon-btn" type="button" hidden>Turn Off Overseer Mode</button>
       </div>
     </header>
 
@@ -583,6 +586,7 @@
     const popupCancelBtn = document.getElementById("popupCancelBtn");
     const sortSelect = document.getElementById("sortSelect");
     const logoEl = document.querySelector(".logo");
+    const disableOverseerBtn = document.getElementById("disableOverseerBtn");
 
     const modal = document.getElementById("guidelinesModal");
     const agreeCheckbox = document.getElementById("agreeCheckbox");
@@ -595,6 +599,7 @@
     let currentSort = localStorage.getItem("club_sort_mode") || "newest";
     let logoClickCount = 0;
     let logoClickTimer = null;
+    popupOverlay.hidden = true;
     refreshIdentityUI();
 
     function getOrCreateLocalUserId() {
@@ -654,16 +659,10 @@
     }
 
     async function requestOverseerAccess() {
-      if (isOverseer) {
-        isOverseer = false;
-        localStorage.removeItem("club_overseer_mode");
-        refreshIdentityUI();
-        renderLinks();
-        setStatus("Overseer mode disabled.", false, true);
-        return;
-      }
+      if (modal.style.display !== "none") return;
+      if (isOverseer) return;
 
-      const input = await showPopup({ title: "Overseer Access", message: "Enter overseer passcode.", input: true, okText: "Unlock" });
+      const input = await showPopup({ title: "Access", message: "Enter passcode.", input: true, okText: "Unlock" });
       if (input === null) return;
 
       try {
@@ -675,7 +674,7 @@
           renderLinks();
           setStatus("Overseer mode enabled.", false, true);
         } else {
-          setStatus("Incorrect overseer passcode.", true);
+          setStatus("Incorrect passcode.", true);
         }
       } catch (error) {
         console.error(error);
@@ -685,8 +684,9 @@
 
     function refreshIdentityUI() {
       const shortId = currentUserId.slice(0, 8);
-      identityPill.textContent = `Local member ID: ${shortId}…${isOverseer ? " • Overseer" : ""}`;
+      identityPill.textContent = `Local member ID: ${shortId}…`;
       sortSelect.value = currentSort;
+      disableOverseerBtn.hidden = !isOverseer;
     }
 
     document.addEventListener("keydown", (event) => {
@@ -713,6 +713,14 @@
       currentSort = sortSelect.value;
       localStorage.setItem("club_sort_mode", currentSort);
       renderLinks();
+    });
+
+    disableOverseerBtn.addEventListener("click", () => {
+      isOverseer = false;
+      localStorage.removeItem("club_overseer_mode");
+      refreshIdentityUI();
+      renderLinks();
+      setStatus("Overseer mode disabled.", false, true);
     });
 
     function fmtTime(d) {
@@ -1017,7 +1025,7 @@
       if (entry.preview) {
         tag.textContent = "Preview";
       } else if (canDelete(entry)) {
-        tag.textContent = isOverseer ? "Overseer control" : "You can delete this";
+        tag.textContent = "You can delete this";
       } else {
         tag.textContent = "Member post";
       }
