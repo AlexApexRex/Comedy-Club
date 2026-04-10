@@ -1,32 +1,46 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link, Route, Routes } from 'react-router-dom';
 
 import Header from './components/Header';
-import Hero from './components/Hero';
-import SubmitClip from './components/SubmitClip';
 import ClipCard from './components/ClipCard';
 import VotePanel from './components/VotePanel';
+import SubmitClip from './components/SubmitClip';
+import Hero from './components/Hero';
 import Admin from './pages/Admin';
+import Landing from './pages/Landing';
 
 import { useAuth } from './context/AuthContext';
-import {
-  getApprovedSubmissions,
-  getSiteConfig,
-  getVoteTotals
-} from './lib/firestore';
 
-function AuthModal({ user, onClose, onGuest }) {
+function Home() {
+  return (
+    <div className="mx-auto max-w-6xl p-4 space-y-4">
+      <Hero />
+      <SubmitClip />
+    </div>
+  );
+}
+
+function Feed() {
+  return (
+    <div className="mx-auto max-w-6xl p-4 space-y-4">
+      <h2 className="text-xl font-semibold">Clip Feed</h2>
+      <p className="text-sm text-slate-600">
+        Approved submissions appear here.
+      </p>
+
+      {/* (your ClipCard + VotePanel logic stays here later) */}
+    </div>
+  );
+}
+
+function AuthModal({ onClose, onGuest }) {
   const { signIn, signUp } = useAuth();
-
   const [mode, setMode] = useState('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  if (user) return null;
-
   async function handleSubmit(e) {
     e.preventDefault();
-
     try {
       if (mode === 'signup') {
         await signUp(email, password);
@@ -41,16 +55,13 @@ function AuthModal({ user, onClose, onGuest }) {
 
   return (
     <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-      <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
-        <h2 className="text-xl font-semibold mb-2">
-          Join LOHS Comedy Club
+      <div className="bg-white p-6 rounded-xl w-full max-w-md space-y-3">
+
+        <h2 className="text-lg font-bold">
+          Join the Comedy Club
         </h2>
 
-        <p className="text-sm text-slate-600 mb-4">
-          Sign in, create an account, or continue as guest.
-        </p>
-
-        <form onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-2">
           <input
             className="w-full border p-2 rounded"
             placeholder="Email"
@@ -67,30 +78,25 @@ function AuthModal({ user, onClose, onGuest }) {
           />
 
           <button className="w-full bg-slate-900 text-white py-2 rounded">
-            {mode === 'login' ? 'Sign In' : 'Create Account'}
+            {mode === 'login' ? 'Sign In' : 'Sign Up'}
           </button>
         </form>
 
         <button
-          className="mt-3 text-sm underline"
+          className="text-sm underline"
           onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
         >
-          {mode === 'login'
-            ? 'Need account? Sign up'
-            : 'Already have account? Sign in'}
+          Switch to {mode === 'login' ? 'Sign Up' : 'Sign In'}
         </button>
 
         <button
-          className="mt-4 w-full border py-2 rounded"
+          className="w-full border py-2 rounded"
           onClick={onGuest}
         >
           Continue as Guest
         </button>
 
-        <button
-          className="mt-2 text-xs text-slate-500 w-full"
-          onClick={onClose}
-        >
+        <button className="text-xs text-gray-500" onClick={onClose}>
           Close
         </button>
       </div>
@@ -98,105 +104,43 @@ function AuthModal({ user, onClose, onGuest }) {
   );
 }
 
-function Home() {
-  const [siteConfig, setSiteConfig] = useState({});
-  const [clips, setClips] = useState([]);
-  const [votes, setVotes] = useState({});
-  const [search, setSearch] = useState('');
-  const [tag, setTag] = useState('all');
-
-  useEffect(() => {
-    getSiteConfig().then(setSiteConfig);
-    getApprovedSubmissions().then(setClips);
-    getVoteTotals().then(setVotes);
-  }, []);
-
-  const tags = useMemo(
-    () => ['all', ...new Set(clips.flatMap((c) => c.tags || []))],
-    [clips]
-  );
-
-  const filtered = useMemo(() => {
-    return clips.filter((c) => {
-      const hitTag = tag === 'all' || (c.tags || []).includes(tag);
-      const q = search.toLowerCase();
-
-      const hitSearch =
-        !q ||
-        c.title?.toLowerCase().includes(q) ||
-        c.notes?.toLowerCase().includes(q);
-
-      return hitTag && hitSearch;
-    });
-  }, [clips, search, tag]);
-
-  return (
-    <main className="mx-auto max-w-6xl p-4 space-y-4">
-      <Hero siteConfig={siteConfig} />
-
-      <SubmitClip />
-
-      <section className="rounded-xl bg-white p-4 shadow">
-        <div className="flex flex-wrap gap-2 items-center">
-          <input
-            className="rounded border p-2"
-            placeholder="Search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-
-          <select
-            className="rounded border p-2"
-            value={tag}
-            onChange={(e) => setTag(e.target.value)}
-          >
-            {tags.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-        </div>
-      </section>
-
-      <section className="grid gap-4">
-        {filtered.map((clip) => (
-          <div key={clip.id}>
-            <ClipCard clip={clip} votes={votes[clip.id] || 0} />
-            <VotePanel submissionId={clip.id} />
-          </div>
-        ))}
-      </section>
-    </main>
-  );
-}
-
 export default function App() {
-  const { user } = useAuth();
-  const [showModal, setShowModal] = useState(true);
+  const [stage, setStage] = useState('landing'); 
+  const [showModal, setShowModal] = useState(false);
 
   return (
     <div>
       <Header />
 
-      <nav className="mx-auto max-w-6xl p-4 text-sm text-slate-700 space-x-4">
-        <Link to="/">Home</Link>
-        <Link to="/admin">Admin</Link>
-      </nav>
+      {/* STEP 1: LANDING PAGE */}
+      {stage === 'landing' && (
+        <Landing onContinue={() => {
+          setStage('app');
+          setShowModal(true);
+        }} />
+      )}
 
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/admin" element={<Admin />} />
-      </Routes>
+      {/* STEP 2: MAIN APP */}
+      {stage === 'app' && (
+        <>
+          <nav className="mx-auto max-w-6xl p-4 text-sm space-x-4">
+            <button onClick={() => setStage('feed')}>Feed</button>
+            <button onClick={() => setStage('home')}>Home</button>
+            <Link to="/admin">Admin</Link>
+          </nav>
 
-      <footer className="mx-auto max-w-6xl p-4 text-xs text-slate-500">
-        Built with React, Tailwind, and Firebase.
-      </footer>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/admin" element={<Admin />} />
+          </Routes>
+        </>
+      )}
 
-      {/* 🔥 POPUP LOGIN */}
+      {stage === 'feed' && <Feed />}
+
+      {/* LOGIN POPUP */}
       {showModal && (
         <AuthModal
-          user={user}
           onClose={() => setShowModal(false)}
           onGuest={() => setShowModal(false)}
         />
