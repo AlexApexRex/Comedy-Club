@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useMemo } from 'react';
 
 function getYouTubeId(url) {
   try {
@@ -14,12 +14,11 @@ function getYouTubeId(url) {
 }
 
 export default function ClipCard({ clip, votes = 0 }) {
-  const [play, setPlay] = useState(false);
-
   const videoId = useMemo(() => getYouTubeId(clip.url), [clip.url]);
 
   return (
     <article className="rounded-xl bg-white p-4 shadow">
+
       <div className="flex justify-between">
         <h4 className="font-semibold">{clip.title}</h4>
         <span className="text-sm">Votes: {votes}</span>
@@ -29,25 +28,17 @@ export default function ClipCard({ clip, votes = 0 }) {
         By {clip.submitterName || 'Anonymous'}
       </p>
 
-      {/* 🎬 YouTube Embed */}
+      {/* 🎬 REAL YOUTUBE PREVIEW (no fake overlay) */}
       {videoId ? (
-        <div className="mt-3 aspect-video w-full rounded-lg overflow-hidden bg-black">
-          {play ? (
-            <iframe
-              className="w-full h-full"
-              src={`https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&rel=0`}
-              title={clip.title}
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-          ) : (
-            <button
-              className="w-full h-full flex items-center justify-center bg-slate-900 text-white"
-              onClick={() => setPlay(true)}
-            >
-              ▶ Play Video
-            </button>
-          )}
+        <div className="mt-3 aspect-video w-full rounded-lg overflow-hidden">
+          <iframe
+            className="w-full h-full"
+            src={`https://www.youtube-nocookie.com/embed/${videoId}`}
+            title={clip.title}
+            loading="lazy"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
         </div>
       ) : (
         <a
@@ -56,12 +47,14 @@ export default function ClipCard({ clip, votes = 0 }) {
           target="_blank"
           rel="noreferrer"
         >
-          Open clip
+          Open Clip
         </a>
       )}
 
       {clip.notes && (
-        <p className="mt-2 text-sm text-slate-700">{clip.notes}</p>
+        <p className="mt-2 text-sm text-slate-700">
+          {clip.notes}
+        </p>
       )}
 
       {clip.tags?.length > 0 && (
