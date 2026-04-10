@@ -8,36 +8,84 @@ import VotePanel from './components/VotePanel';
 import Admin from './pages/Admin';
 import { getApprovedSubmissions, getSiteConfig, getVoteTotals } from './lib/firestore';
 import { useAuth } from './context/AuthContext';
-import LandingAuth from './components/LandingAuth';
-import GuidelinesGate from './components/GuidelinesGate';
-import MembershipCard from './components/MembershipCard';
-import CookieConsent from './components/CookieConsent';
-import ScrollBackdrop from './components/ScrollBackdrop';
+
+function LandingScreen({ onGuestEnter, onMemberEnter }) {
+  return (
+    <div className="min-h-screen bg-[radial-gradient(ellipse_at_top,_rgba(59,130,246,0.18),_transparent_45%),linear-gradient(180deg,_#0f172a_0%,_#111827_48%,_#f8fafc_100%)] text-white">
+      <div className="mx-auto flex min-h-screen max-w-6xl items-center px-4 py-10">
+        <div className="grid w-full gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+          <section className="space-y-6">
+            <p className="inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-1 text-xs uppercase tracking-[0.28em] text-white/80">
+              LOHS Comedy Club
+            </p>
+
+            <h1 className="max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
+              Comedy clips, clean design, and a simple place to share what works.
+            </h1>
+
+            <p className="max-w-xl text-base leading-7 text-slate-200 sm:text-lg">
+              Start as a guest, sign in to participate, or enter the admin area if you manage the club.
+              This page opens with a modern introduction before showing the main feed.
+            </p>
+
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <button
+                onClick={onGuestEnter}
+                className="rounded-2xl bg-white px-5 py-3 font-medium text-slate-950 shadow-lg shadow-black/20 transition hover:-translate-y-0.5"
+              >
+                Continue as guest
+              </button>
+
+              <button
+                onClick={onMemberEnter}
+                className="rounded-2xl border border-white/20 bg-white/10 px-5 py-3 font-medium text-white backdrop-blur transition hover:bg-white/15"
+              >
+                Sign in
+              </button>
+            </div>
+
+            <p className="text-sm text-slate-300">
+              Guest mode keeps browsing open. Sign in unlocks voting and club tools.
+            </p>
+          </section>
+
+          <aside className="rounded-3xl border border-white/10 bg-white/10 p-6 shadow-2xl shadow-black/20 backdrop-blur-xl">
+            <div className="space-y-4">
+              <div className="rounded-2xl bg-slate-950/40 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-300">What visitors see first</p>
+                <ul className="mt-3 space-y-2 text-sm text-slate-100">
+                  <li>Guest / sign in / admin entry</li>
+                  <li>A short intro instead of a crowded page</li>
+                  <li>A cleaner path to the clip feed</li>
+                </ul>
+              </div>
+
+              <div className="rounded-2xl bg-slate-950/40 p-4 text-sm text-slate-100">
+                <p className="font-medium">Club meeting</p>
+                <p className="mt-1 text-slate-300">
+                  First available Wednesday of the month in Room P206, Mr. Romero’s classroom.
+                </p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function Home() {
-  const { user } = useAuth();
   const [siteConfig, setSiteConfig] = useState({});
   const [clips, setClips] = useState([]);
   const [votes, setVotes] = useState({});
   const [search, setSearch] = useState('');
   const [tag, setTag] = useState('all');
-  const [guestAllowed, setGuestAllowed] = useState(localStorage.getItem('guest_mode') === '1');
-  const [guidelinesAck, setGuidelinesAck] = useState(true);
 
   useEffect(() => {
     getSiteConfig().then(setSiteConfig);
     getApprovedSubmissions().then(setClips);
     getVoteTotals().then(setVotes);
   }, []);
-
-  useEffect(() => {
-    if (!user) {
-      setGuidelinesAck(true);
-      return;
-    }
-    const key = `guidelines_ack_${user.uid}`;
-    setGuidelinesAck(localStorage.getItem(key) === '1');
-  }, [user]);
 
   const tags = useMemo(() => ['all', ...new Set(clips.flatMap((c) => c.tags || []))], [clips]);
 
@@ -46,62 +94,42 @@ function Home() {
       clips.filter((c) => {
         const hitTag = tag === 'all' || (c.tags || []).includes(tag);
         const q = search.toLowerCase();
-        const hitSearch = !q || c.title?.toLowerCase().includes(q) || c.notes?.toLowerCase().includes(q);
+        const hitSearch =
+          !q || c.title?.toLowerCase().includes(q) || c.notes?.toLowerCase().includes(q);
         return hitTag && hitSearch;
       }),
     [clips, search, tag]
   );
 
-  if (!user && !guestAllowed) {
-    return (
-      <main className="mx-auto max-w-6xl p-4 pt-6">
-        <LandingAuth
-          onContinueGuest={() => {
-            localStorage.setItem('guest_mode', '1');
-            setGuestAllowed(true);
-          }}
-        />
-        <MembershipCard siteConfig={siteConfig} />
-      </main>
-    );
-  }
-
   return (
-    <main className="mx-auto max-w-6xl p-4 space-y-6 sm:p-6">
-      {!guidelinesAck && user && <GuidelinesGate user={user} onAck={() => setGuidelinesAck(true)} />}
-
+    <main className="mx-auto max-w-6xl space-y-4 px-4 py-6">
       <Hero siteConfig={siteConfig} />
 
-      <section className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
-        <SubmitClip />
-        <div className="space-y-4">
-          <MembershipCard siteConfig={siteConfig} />
-          <section className="rounded-3xl border border-white/50 bg-white/80 p-4 shadow-xl backdrop-blur">
-            <h3 className="text-lg font-semibold text-slate-900">Browse approved clips</h3>
-            <div className="mt-3 flex flex-wrap gap-2 items-center">
-              <input
-                className="min-w-40 flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                placeholder="Search title or notes"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              <select
-                className="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition focus:border-slate-400 focus:ring-2 focus:ring-slate-200"
-                value={tag}
-                onChange={(e) => setTag(e.target.value)}
-              >
-                {tags.map((t) => (
-                  <option key={t}>{t}</option>
-                ))}
-              </select>
-            </div>
-          </section>
+      <SubmitClip />
+
+      <section className="rounded-2xl bg-white p-4 shadow">
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            className="rounded-lg border border-slate-200 p-2 outline-none focus:border-slate-400"
+            placeholder="Search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <select
+            className="rounded-lg border border-slate-200 p-2 outline-none focus:border-slate-400"
+            value={tag}
+            onChange={(e) => setTag(e.target.value)}
+          >
+            {tags.map((t) => (
+              <option key={t}>{t}</option>
+            ))}
+          </select>
         </div>
       </section>
 
       <section className="grid gap-4">
         {filtered.map((clip) => (
-          <div key={clip.id} className="rounded-3xl border border-white/30 bg-white/75 p-2 shadow-lg backdrop-blur-sm">
+          <div key={clip.id}>
             <ClipCard clip={clip} votes={votes[clip.id] || 0} />
             <VotePanel submissionId={clip.id} />
           </div>
@@ -112,20 +140,59 @@ function Home() {
 }
 
 export default function App() {
+  const { user, signIn } = useAuth();
+  const [entered, setEntered] = useState(() => localStorage.getItem('lohs-entered') === 'true');
+  const [mode, setMode] = useState(() => localStorage.getItem('lohs-mode') || '');
+
+  useEffect(() => {
+    if (entered) {
+      localStorage.setItem('lohs-entered', 'true');
+      localStorage.setItem('lohs-mode', mode);
+    } else {
+      localStorage.removeItem('lohs-entered');
+      localStorage.removeItem('lohs-mode');
+    }
+  }, [entered, mode]);
+
+  const goGuest = () => {
+    setMode('guest');
+    setEntered(true);
+  };
+
+  const goSignIn = async () => {
+    await signIn();
+    setMode('member');
+    setEntered(true);
+  };
+
+  if (!entered) {
+    return <LandingScreen onGuestEnter={goGuest} onMemberEnter={goSignIn} />;
+  }
+
   return (
-    <div className="relative min-h-screen text-slate-800 antialiased">
-      <ScrollBackdrop />
+    <div className="min-h-screen bg-slate-50 text-slate-900">
       <Header />
-      <nav className="mx-auto max-w-6xl p-4 text-sm text-slate-700 space-x-4 sm:px-6">
-        <Link to="/" className="rounded-full px-3 py-1 transition hover:bg-slate-100">Home</Link>
-        <Link to="/admin" className="rounded-full px-3 py-1 transition hover:bg-slate-100">Admin</Link>
-      </nav>
+
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 text-xs text-slate-500">
+        <p>{mode === 'guest' ? 'Guest mode' : user ? 'Signed in' : 'Welcome'}</p>
+        <nav className="flex gap-4 text-sm">
+          <Link className="hover:text-slate-950" to="/">
+            Home
+          </Link>
+          <Link className="hover:text-slate-950" to="/admin">
+            Admin
+          </Link>
+        </nav>
+      </div>
+
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/admin" element={<Admin />} />
       </Routes>
-      <CookieConsent />
-      <footer className="mx-auto max-w-6xl p-4 pb-8 text-xs text-slate-500 sm:px-6">Built with React, Tailwind, and Firebase.</footer>
+
+      <footer className="mx-auto max-w-6xl px-4 py-6 text-xs text-slate-500">
+        Built with React, Tailwind, and Firebase.
+      </footer>
     </div>
   );
 }
