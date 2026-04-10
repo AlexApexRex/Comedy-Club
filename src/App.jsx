@@ -20,12 +20,11 @@ function LandingScreen({ onGuestEnter, onMemberEnter }) {
             </p>
 
             <h1 className="max-w-2xl text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
-              Comedy clips, clean design, and a simple place to share what works.
+              Official LOHS Comedy Club Website.
             </h1>
 
             <p className="max-w-xl text-base leading-7 text-slate-200 sm:text-lg">
-              Start as a guest, sign in to participate, or enter the admin area if you manage the club.
-              This page opens with a modern introduction before showing the main feed.
+              Start as a guest, or sign in to participate.
             </p>
 
             <div className="flex flex-col gap-3 sm:flex-row">
