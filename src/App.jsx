@@ -6,17 +6,97 @@ import Hero from './components/Hero';
 import SubmitClip from './components/SubmitClip';
 import ClipCard from './components/ClipCard';
 import VotePanel from './components/VotePanel';
-
 import Admin from './pages/Admin';
 
-import LandingAuth from './components/LandingAuth';
 import { useAuth } from './context/AuthContext';
-
 import {
   getApprovedSubmissions,
   getSiteConfig,
   getVoteTotals
 } from './lib/firestore';
+
+function AuthModal({ user, onClose, onGuest }) {
+  const { signIn, signUp } = useAuth();
+
+  const [mode, setMode] = useState('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+
+  if (user) return null;
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+
+    try {
+      if (mode === 'signup') {
+        await signUp(email, password);
+      } else {
+        await signIn(email, password);
+      }
+      onClose();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+      <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
+        <h2 className="text-xl font-semibold mb-2">
+          Join LOHS Comedy Club
+        </h2>
+
+        <p className="text-sm text-slate-600 mb-4">
+          Sign in, create an account, or continue as guest.
+        </p>
+
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <input
+            className="w-full border p-2 rounded"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
+          <input
+            className="w-full border p-2 rounded"
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+
+          <button className="w-full bg-slate-900 text-white py-2 rounded">
+            {mode === 'login' ? 'Sign In' : 'Create Account'}
+          </button>
+        </form>
+
+        <button
+          className="mt-3 text-sm underline"
+          onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
+        >
+          {mode === 'login'
+            ? 'Need account? Sign up'
+            : 'Already have account? Sign in'}
+        </button>
+
+        <button
+          className="mt-4 w-full border py-2 rounded"
+          onClick={onGuest}
+        >
+          Continue as Guest
+        </button>
+
+        <button
+          className="mt-2 text-xs text-slate-500 w-full"
+          onClick={onClose}
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function Home() {
   const [siteConfig, setSiteConfig] = useState({});
@@ -92,16 +172,8 @@ function Home() {
 }
 
 export default function App() {
-  const { user, loading } = useAuth();
-
-  if (loading) {
-    return <p className="p-6">Loading...</p>;
-  }
-
-  // 🔐 LOGIN GATE (this is what makes it feel like a real app)
-  if (!user) {
-    return <LandingAuth />;
-  }
+  const { user } = useAuth();
+  const [showModal, setShowModal] = useState(true);
 
   return (
     <div>
@@ -120,6 +192,15 @@ export default function App() {
       <footer className="mx-auto max-w-6xl p-4 text-xs text-slate-500">
         Built with React, Tailwind, and Firebase.
       </footer>
+
+      {/* 🔥 POPUP LOGIN */}
+      {showModal && (
+        <AuthModal
+          user={user}
+          onClose={() => setShowModal(false)}
+          onGuest={() => setShowModal(false)}
+        />
+      )}
     </div>
   );
 }
