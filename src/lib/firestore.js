@@ -1,11 +1,15 @@
+import {
+  collection,
   doc,
   getDoc,
   getDocs,
+  addDoc,
   orderBy,
   query,
   serverTimestamp,
   where,
 } from 'firebase/firestore';
+
 import { httpsCallable } from 'firebase/functions';
 import { db, functions, isFirebaseConfigured } from '../firebase';
 import { mockSiteConfig, mockSubmissions, mockVotes } from '../data/mockData';
@@ -18,7 +22,11 @@ export async function getSiteConfig() {
 
 export async function getApprovedSubmissions() {
   if (!isFirebaseConfigured) return mockSubmissions;
-  const q = query(collection(db, 'submissions'), where('approved', '==', true), orderBy('createdAt', 'desc'));
+  const q = query(
+    collection(db, 'submissions'),
+    where('approved', '==', true),
+    orderBy('createdAt', 'desc')
+  );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }));
 }
