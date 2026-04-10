@@ -3,17 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <meta name="description" content="LOHS Comedy Analysis Hub - discover, discuss, and vote on great comedy clips." />
     <meta property="og:title" content="LOHS Comedy Analysis Hub" />
     <meta property="og:description" content="Share clips, add analysis, and vote for Hall of Fame picks." />
     <meta property="og:type" content="website" />
-    <meta property="og:image" content="/og-image.png" />
+
+    <!-- FIX: relative paths for GitHub Pages -->
+    <meta property="og:image" content="./og-image.png" />
+
     <meta name="twitter:card" content="summary_large_image" />
-    <link rel="manifest" href="/manifest.json" />
+
+    <!-- FIX: relative path (important for GitHub Pages subfolder hosting) -->
+    <link rel="manifest" href="./manifest.json" />
+    <link rel="icon" href="./favicon.svg" />
+
     <title>LOHS Comedy Analysis Hub</title>
   </head>
+
   <body class="bg-slate-50">
     <div id="root"></div>
+
+    <!-- Vite entry (DO NOT CHANGE) -->
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
